@@ -592,7 +592,6 @@ th[data-tip]{cursor:help}
           <div class="fld"><label for="pxData">Data</label><input id="pxData" type="date"></div>
           <div class="fld"><label for="pxHora">Horário</label><input id="pxHora" type="time"></div>
           <div class="fld"><label for="pxObs">Observação</label><input id="pxObs" type="text" placeholder="amistoso, campeonato…"></div>
-          <div class="fld"><label for="pxPor">Quem está marcando</label><input id="pxPor" type="text" placeholder="seu nome"></div>
         </div>
         <div class="toolbar" style="margin-top:6px">
           <button class="btn primary" id="btnSalvaProx">Salvar</button>
@@ -4622,7 +4621,7 @@ function renderProximo(){
     : 'sem data marcada';
   vista.innerHTML = 'Bloco 7 <span style="color:var(--ink3)">x</span> ' + esc(PROX.opp)
     + '<span class="quando">' + esc(fmt) + (PROX.obs ? ' · ' + esc(PROX.obs) : '')
-    + (PROX.por ? ' · marcado por ' + esc(PROX.por) : '') + '</span>';
+    + '</span>';
 
   if(!quando || isNaN(quando)){ cd.hidden = true; return; }
   cd.hidden = false;
@@ -4643,7 +4642,6 @@ function abreFormProx(abrir){
     $('#pxData').value = PROX?.data || '';
     $('#pxHora').value = PROX?.hora || '';
     $('#pxObs').value  = PROX?.obs  || '';
-    $('#pxPor').value  = PROX?.por  || (localStorage.getItem('bloco7:eu')||'');
     $('#pxOpp').focus();
   }
 }
@@ -4651,10 +4649,8 @@ $('#btnEditProx').onclick = ()=>abreFormProx($('#formProximo').hidden);
 $('#btnSalvaProx').onclick = async ()=>{
   const opp = $('#pxOpp').value.trim();
   if(!opp){ toast('Escreva o nome do adversário.','err'); return; }
-  const por = $('#pxPor').value.trim();
-  try{ if(por) localStorage.setItem('bloco7:eu', por); }catch(e){}
   const onde = await salvaProximo({ opp, data:$('#pxData').value, hora:$('#pxHora').value,
-                                    obs:$('#pxObs').value.trim(), por });
+                                    obs:$('#pxObs').value.trim() });
   abreFormProx(false); renderProximo();
   toast(onde==='todos' ? 'Próximo jogo salvo para todo mundo.' : 'Salvo neste navegador.', 'ok');
 };

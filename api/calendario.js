@@ -59,7 +59,6 @@ export default async function handler(req, res) {
         data: String(corpo.data ?? '').slice(0, 10),
         hora: String(corpo.hora ?? '').slice(0, 5),
         obs:  String(corpo.obs  ?? '').slice(0, 80),
-        por:  String(corpo.por  ?? '').slice(0, 40),
         em:   new Date().toISOString(),
       };
       await gravar(limpo);
