@@ -400,6 +400,7 @@ th[data-tip]{cursor:help}
 }
 .pitch .lines{position:absolute; inset:0; pointer-events:none}
 .pitch.modo-desenho{cursor:crosshair}
+.pitch.modo-apagar{cursor:pointer}
 .tok{
   position:absolute; transform:translate(-50%,-50%); width:62px; text-align:center;
   cursor:grab; z-index:3; touch-action:none; border:0; padding:4px 2px 5px;
@@ -784,6 +785,9 @@ th[data-tip]{cursor:help}
             <span class="amostra livre"></span> Seta livre
           </button>
           <button class="segbtn" id="mRabisco" aria-pressed="false">Rabisco</button>
+          <button class="segbtn" id="mBorracha" aria-pressed="false">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px"><path d="M20 20H9l-5-5a2 2 0 0 1 0-2.8l8.5-8.5a2 2 0 0 1 2.8 0l5.2 5.2a2 2 0 0 1 0 2.8L13 20"/><path d="M7.5 12.5 15 20"/></svg>Borracha
+          </button>
           <button class="segbtn" id="mBola" aria-pressed="true">Bola</button>
           <button class="btn" id="bUndo" disabled title="Desfazer a última ação (Ctrl+Z)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
@@ -3795,7 +3799,7 @@ const SETOR = {ATA:'Ataque',PE:'Ataque',PD:'Ataque',
                LE:'Defesa',LD:'Defesa',ZAG:'Defesa',GOL:'Defesa'};
 const ESC_KEY = 'bloco7:escalacao:v1';
 
-let ESC = { formacao:'4-2-3-1', slots:[], desenho:[], bola:{x:50,y:50,on:true}, modo:null, sel:null, selJogada:null };
+let ESC = { formacao:'4-2-3-1', slots:[], desenho:[], bola:{x:50,y:50,on:true}, modo:null, sel:null, selJogada:null, alvoApagar:-1 };
 let ESC_HIST = [];
 function escSnapshot(){
   ESC_HIST.push(JSON.stringify({slots:ESC.slots, desenho:ESC.desenho, bola:ESC.bola}));
@@ -3880,24 +3884,47 @@ function desenhaCampo(){
     <circle cx="100" cy="260" r="2.2" fill="rgba(255,255,255,.45)"/>
   </g>`;
 }
-const COR_JOGADA = '#FFD666', COR_LENTA = '#6FB6E8', COR_LIVRE = '#FFFFFF';
+const COR_JOGADA = '#FFD666', COR_LENTA = '#6FB6E8', COR_LIVRE = '#FFFFFF', COR_APAGAR = '#FF6B6B';
+
+/* qual desenho está sob o dedo — usado pela borracha */
+function distSegmento(px, py, x1, y1, x2, y2){
+  const dx = x2-x1, dy = y2-y1;
+  const t = (dx || dy) ? Math.max(0, Math.min(1, ((px-x1)*dx + (py-y1)*dy) / (dx*dx + dy*dy))) : 0;
+  return Math.hypot(px - (x1 + t*dx), py - (y1 + t*dy));
+}
+function desenhoEm(vx, vy){
+  let achado = -1, menor = 1e9;
+  ESC.desenho.forEach((d,i)=>{
+    let dist;
+    if(d.t === 'seta') dist = distSegmento(vx, vy, d.x1, d.y1, d.x2, d.y2);
+    else {
+      dist = 1e9;
+      for(let k=1; k<d.p.length; k++)
+        dist = Math.min(dist, distSegmento(vx, vy, d.p[k-1][0], d.p[k-1][1], d.p[k][0], d.p[k][1]));
+    }
+    if(dist < menor){ menor = dist; achado = i; }
+  });
+  return menor <= 9 ? achado : -1;
+}
 function desenhaSetas(){
   const s = $('#pitchDraw'); if(!s) return;
   const mk = (id,cor) => `<marker id="${id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5"
       markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${cor}"/></marker>`;
   s.innerHTML = `<defs>${mk('ptJ',COR_JOGADA)}${mk('ptS',COR_LENTA)}${mk('ptL',COR_LIVRE)}</defs>`
-    + ESC.desenho.map(d=>{
+    + ESC.desenho.map((d,i)=>{
         const jog = d.t==='seta' && d.dono;
-        const cor = !jog ? COR_LIVRE : (d.lento ? COR_LENTA : COR_JOGADA);
+        const marcado = (i === ESC.alvoApagar);
+        const cor = marcado ? COR_APAGAR : (!jog ? COR_LIVRE : (d.lento ? COR_LENTA : COR_JOGADA));
         const mrk = !jog ? 'ptL' : (d.lento ? 'ptS' : 'ptJ');
+        const esp = marcado ? 5 : 2.6;
         if(d.t==='seta')
           return `<line x1="${d.x1}" y1="${d.y1}" x2="${d.x2}" y2="${d.y2}" stroke="${cor}"
-                   stroke-width="2.6" stroke-linecap="round" opacity="${jog?1:.85}"
+                   stroke-width="${esp}" stroke-linecap="round" opacity="${marcado?1:(jog?1:.85)}"
                    marker-end="url(#${mrk})" ${jog?'':'stroke-dasharray="7 5"'}
                    vector-effect="non-scaling-stroke"/>`;
-        return `<polyline points="${d.p.map(q=>q.join(',')).join(' ')}" fill="none" stroke="${COR_LIVRE}"
-                 stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" opacity=".85"
-                 vector-effect="non-scaling-stroke"/>`;
+        return `<polyline points="${d.p.map(q=>q.join(',')).join(' ')}" fill="none" stroke="${cor}"
+                 stroke-width="${marcado?4.4:2.4}" stroke-linejoin="round" stroke-linecap="round"
+                 opacity="${marcado?1:.85}" vector-effect="non-scaling-stroke"/>`;
       }).join('')
     // numeração da sequência da jogada
     + passosJogada().filter(d=>d.dono==='bola').map((d,i)=>{
@@ -4512,6 +4539,16 @@ $('#btnSaveMatch').onclick = ()=>{
     const desenhando = ESC.modo !== null;
     const setaMov = ESC.modo==='jogada' || ESC.modo==='lenta';
 
+    if(tok && ESC.modo === 'borracha'){
+      // no modo borracha o jogador não atrapalha: o clique vale para a linha atrás dele
+      const p0 = pct(e), v0 = vb(p0);
+      const i = desenhoEm(v0[0], v0[1]);
+      if(i >= 0){
+        escSnapshot(); ESC.desenho.splice(i, 1); ESC.alvoApagar = -1;
+        escSalva(); renderEscala(); toast('Linha apagada.');
+      }
+      return;
+    }
     if(tok){
       // com um modo de seta ligado, o token não arrasta: o clique só marca a peça
       if(desenhando){
@@ -4534,6 +4571,17 @@ $('#btnSaveMatch').onclick = ()=>{
     // clicou no gramado
     if(!desenhando) return;
     const p = pct(e), v = vb(p);
+
+    if(ESC.modo === 'borracha'){
+      const i = desenhoEm(v[0], v[1]);
+      if(i < 0){ toast('Clique em cima da linha que você quer apagar.'); return; }
+      escSnapshot();
+      ESC.desenho.splice(i, 1);
+      ESC.alvoApagar = -1;
+      escSalva(); renderEscala();
+      toast('Linha apagada.');
+      return;
+    }
     if(setaMov){
       if(!ESC.selJogada){
         // começar em cima da ponta de uma seta já desenhada continua a corrente daquela peça
@@ -4561,6 +4609,12 @@ $('#btnSaveMatch').onclick = ()=>{
   });
 
   campo.addEventListener('pointermove', e=>{
+    if(ESC.modo === 'borracha' && !arrastando && !tracando){
+      const v = vb(pct(e));
+      const i = desenhoEm(v[0], v[1]);
+      if(i !== ESC.alvoApagar){ ESC.alvoApagar = i; desenhaSetas(); }
+      return;
+    }
     if(arrastando){
       const p = pct(e);
       if(!moveu){ escSnapshot(); moveu = true; }
@@ -4599,6 +4653,9 @@ $('#btnSaveMatch').onclick = ()=>{
   }
   campo.addEventListener('pointerup', solta);
   campo.addEventListener('pointercancel', solta);
+  campo.addEventListener('pointerleave', ()=>{
+    if(ESC.alvoApagar !== -1){ ESC.alvoApagar = -1; desenhaSetas(); }
+  });
 })();
 
 const AVISOS = {
@@ -4606,13 +4663,17 @@ const AVISOS = {
   lenta:   'Modo <b>jogada lenta</b>: arrastar está travado. Clique na peça e puxe a seta do gramado.',
   livre:   'Modo <b>seta livre</b>: arrastar está travado. Arraste no gramado para desenhar.',
   rabisco: 'Modo <b>rabisco</b>: arrastar está travado. Arraste no gramado para desenhar.',
+  borracha: 'Modo <b>borracha</b>: passe o dedo sobre a linha — ela fica vermelha — e clique para apagar só ela.',
 };
 function setModo(m){
   ESC.modo = (ESC.modo === m) ? null : m;      // clicar de novo desliga e libera o arrastar
   const cur = ESC.modo;
-  [['#mJogada','jogada'],['#mLenta','lenta'],['#mLivre','livre'],['#mRabisco','rabisco']]
+  [['#mJogada','jogada'],['#mLenta','lenta'],['#mLivre','livre'],['#mRabisco','rabisco'],
+   ['#mBorracha','borracha']]
     .forEach(([sel,nome])=>$(sel).setAttribute('aria-pressed', cur===nome ? 'true':'false'));
-  $('#pitch').classList.toggle('modo-desenho', cur!==null);
+  if(cur !== 'borracha') ESC.alvoApagar = -1;
+  $('#pitch').classList.toggle('modo-desenho', cur!==null && cur!=='borracha');
+  $('#pitch').classList.toggle('modo-apagar', cur==='borracha');
   const av = $('#escAviso');
   if(av){
     if(cur){ av.hidden = false; av.innerHTML = AVISOS[cur] + ' Clique no botão de novo para destravar.'; }
@@ -4625,7 +4686,8 @@ function setModo(m){
 $('#mJogada').onclick  = ()=>setModo('jogada');
 $('#mLenta').onclick   = ()=>setModo('lenta');
 $('#mLivre').onclick   = ()=>setModo('livre');
-$('#mRabisco').onclick = ()=>setModo('rabisco');
+$('#mRabisco').onclick  = ()=>setModo('rabisco');
+$('#mBorracha').onclick = ()=>setModo('borracha');
 $('#mBola').onclick = ()=>{
   escSnapshot(); ESC.bola.on = !ESC.bola.on;
   if(!ESC.bola.on){
