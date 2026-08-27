@@ -520,6 +520,24 @@ th[data-tip]{cursor:help}
 .passo.feito .num{background:var(--good)}
 .linkbtn{background:none; border:0; padding:0; color:var(--accent); cursor:pointer;
   text-decoration:underline; font-size:12.5px; font-family:inherit}
+.estante{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:9px}
+.slotj{
+  position:relative; text-align:left; border:1px solid var(--line); background:var(--surf2);
+  border-radius:10px; padding:11px 12px; cursor:pointer; min-height:64px;
+  display:flex; flex-direction:column; gap:3px; transition:border-color .15s ease;
+}
+.slotj:hover{border-color:var(--accent)}
+.slotj .jn{font-weight:700; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  padding-right:34px}
+.slotj .jd{font-size:11px; color:var(--ink3)}
+.slotj .jx{
+  position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:7px; border:0;
+  background:none; color:var(--ink3); cursor:pointer; display:grid; place-items:center; font-size:13px;
+}
+.slotj .jx:hover{background:var(--surf3); color:var(--bad)}
+.slotj.vaziaj{border-style:dashed; color:var(--ink3); align-items:center; justify-content:center;
+  cursor:default; font-size:12.5px; text-align:center}
+.slotj.tocando{border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
 .toast{
   position:fixed; left:50%; bottom:24px; transform:translate(-50%,14px);
   background:var(--surf); color:var(--ink); border:1px solid var(--line2); border-radius:11px;
@@ -781,6 +799,10 @@ th[data-tip]{cursor:help}
             <span id="bPlayTxt">Ensaiar jogada</span>
           </button>
           <button class="btn" id="bLimpaJogada">Limpar jogada</button>
+          <button class="btn" id="bGravar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+            Gravar jogada
+          </button>
         </div>
         <div class="escaviso" id="escAviso" hidden></div>
         <p style="font-size:12.5px;color:var(--ink3);margin:10px 0 0;line-height:1.6">
@@ -798,6 +820,10 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
       </div>
 
       <div class="escpanel">
+        <div class="card pad">
+          <div class="sechead"><h2>Jogadas do time</h2><span class="hint" id="jogHint">clique para assistir</span></div>
+          <div class="estante" id="estante"></div>
+        </div>
         <div class="card pad">
           <div class="sechead"><h2 id="escTitulo">Elenco</h2><span class="hint" id="escHint">clique numa posição do campo</span></div>
           <div class="aptleg" style="margin-bottom:12px">
@@ -3663,6 +3689,35 @@ function mergeMatches(incoming){
   DATA.matches.forEach((m,i)=>m.order=i+1);
   return {added,upd,travadas};
 }
+/* ============ jogadas gravadas ============ */
+const MAX_JOGADAS = 6;
+let JOGADAS = [];
+let JOG_COMPARTILHADA = false;
+
+async function carregaJogadas(){
+  try{
+    const j = await (await fetch('/api/jogadas', {cache:'no-store'})).json();
+    if(j && j.ok){
+      JOG_COMPARTILHADA = true;
+      JOGADAS = (j.dados && Array.isArray(j.dados.jogadas)) ? j.dados.jogadas : [];
+    }
+  }catch(e){}
+  if(!JOG_COMPARTILHADA){
+    try{ JOGADAS = JSON.parse(localStorage.getItem('bloco7:jogadas')||'[]'); }catch(e){ JOGADAS=[]; }
+  }
+  renderEstante();
+}
+async function salvaJogadas(){
+  try{ localStorage.setItem('bloco7:jogadas', JSON.stringify(JOGADAS)); }catch(e){}
+  if(!JOG_COMPARTILHADA) return 'local';
+  try{
+    const r = await fetch('/api/jogadas', {method:'POST',
+      headers:{'Content-Type':'application/json'}, body: JSON.stringify({jogadas: JOGADAS})});
+    const j = await r.json();
+    return (j && j.ok) ? 'todos' : 'local';
+  }catch(e){ return 'local'; }
+}
+
 /* ============ histórico compartilhado ============ */
 let COMPARTILHADO = false;      // o servidor está guardando o histórico?
 let ENVIANDO = null;
@@ -3938,6 +3993,41 @@ function renderEscLista(){
     box.appendChild(b);
   });
 }
+function renderEstante(){
+  const box = $('#estante'); if(!box) return;
+  const hint = $('#jogHint');
+  if(hint) hint.textContent = JOG_COMPARTILHADA
+    ? 'clique para assistir · visíveis para todo o time'
+    : 'clique para assistir · salvas só neste navegador';
+  box.innerHTML = '';
+  JOGADAS.forEach((j, i)=>{
+    const passos = (j.desenho||[]).filter(d=>d.t==='seta' && d.dono).length;
+    const emCampo = (j.slots||[]).filter(s=>s.jogador).length;
+    const b = el('button','slotj');
+    b.innerHTML = '<span class="jn">'+esc(j.nome)+'</span>'
+      + '<span class="jd">'+esc(j.formacao||'')+' · '+emCampo+' em campo · '
+      + passos+' movimento'+(passos===1?'':'s')+'</span>';
+    b.title = 'Assistir "'+j.nome+'"';
+    b.onclick = ()=>tocaJogada(i);
+    const x = document.createElement('button');
+    x.className='jx'; x.type='button'; x.setAttribute('aria-label','Apagar '+j.nome);
+    x.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+    x.onclick = async (e)=>{
+      e.stopPropagation();
+      if(!confirm('Apagar a jogada "'+j.nome+'"'+(JOG_COMPARTILHADA?' para todo o time?':'?'))) return;
+      JOGADAS.splice(i,1); renderEstante();
+      const onde = await salvaJogadas();
+      toast(onde==='todos' ? 'Jogada apagada para todos.' : 'Jogada apagada.');
+    };
+    b.appendChild(x);
+    box.appendChild(b);
+  });
+  for(let i=JOGADAS.length; i<MAX_JOGADAS; i++){
+    const v = el('div','slotj vaziaj', 'vazio');
+    box.appendChild(v);
+  }
+}
+
 function renderEscResumo(){
   const box = $('#escResumo');
   const usados = ESC.slots.filter(s=>s.jogador);
@@ -4603,6 +4693,55 @@ $('#bPlay').onclick = ()=>{
 
 /* ---- demais controles da lousa ---- */
 $('#bLimpaDesenho').onclick = ()=>{ escSnapshot(); ESC.desenho=[]; escSalva(); renderEscala(); toast('Desenho apagado.'); };
+$('#bGravar').onclick = async ()=>{
+  const passos = passosJogada().length;
+  if(!passos){
+    toast('Desenhe pelo menos uma seta de jogada antes de gravar.','err');
+    return;
+  }
+  if(JOGADAS.length >= MAX_JOGADAS){
+    toast('Os '+MAX_JOGADAS+' espaços estão cheios. Apague uma jogada no X para abrir vaga.','err');
+    return;
+  }
+  const nome = (prompt('Nome da jogada:', 'Escanteio ' + (JOGADAS.length+1)) || '').trim();
+  if(!nome) return;
+  JOGADAS.push({
+    nome,
+    formacao: ESC.formacao,
+    slots: JSON.parse(JSON.stringify(ESC.slots)),
+    bola: {...ESC.bola},
+    desenho: JSON.parse(JSON.stringify(ESC.desenho)),
+    em: new Date().toISOString(),
+  });
+  renderEstante();
+  const onde = await salvaJogadas();
+  toast(onde==='todos' ? 'Jogada gravada para todo o time.' : 'Jogada gravada neste navegador.', 'ok');
+};
+
+/* carrega a jogada no campo e roda o ensaio */
+function tocaJogada(i){
+  const j = JOGADAS[i]; if(!j || ensaiando) return;
+  escSnapshot();
+  ESC.formacao = j.formacao || ESC.formacao;
+  ESC.slots   = JSON.parse(JSON.stringify(j.slots || []));
+  ESC.bola    = Object.assign({x:50,y:50,on:true}, j.bola||{});
+  ESC.desenho = JSON.parse(JSON.stringify(j.desenho || []));
+  ESC.sel = null; ESC.selJogada = null;
+  const sel = $('#fFormacao'); if(sel) sel.value = ESC.formacao;
+  renderEscala();
+  document.querySelectorAll('#estante .slotj').forEach((n,k)=>n.classList.toggle('tocando', k===i));
+  $('#pitch').scrollIntoView({behavior:'smooth', block:'center'});
+  setTimeout(()=>{
+    $('#bPlay').click();
+    const limpa = setInterval(()=>{
+      if(!ensaiando){
+        clearInterval(limpa);
+        document.querySelectorAll('#estante .slotj').forEach(n=>n.classList.remove('tocando'));
+      }
+    }, 400);
+  }, 500);
+}
+
 $('#bLimpaJogada').onclick = ()=>{
   escSnapshot(); ESC.desenho = ESC.desenho.filter(d=>!(d.t==='seta' && d.dono));
   escSalva(); renderEscala(); toast('Sequência da jogada apagada.');
@@ -4743,6 +4882,7 @@ TABS.forEach(t=>$('#p-'+t).hidden = t!==start);
 renderAll();
 carregaProximo();
 // puxa o histórico compartilhado e redesenha com ele
+carregaJogadas();
 carregaEstado().then(ok=>{
   if(ok){ picked=null; curMatch=null; renderAll(); }
   const av = $('#avisoSync');
