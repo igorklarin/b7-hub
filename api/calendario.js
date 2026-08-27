@@ -33,12 +33,18 @@ async function ler() {
     }
   }
 
-  // caminho antigo: achar pela listagem e baixar a url
+  // caminho antigo: achar pela listagem e baixar a url.
+  // store privado exige autenticacao, entao mandamos o token junto quando existe.
   try {
     const { blobs } = await blob.list({ prefix: ARQUIVO, limit: 1 });
     if (!blobs || !blobs.length) return null;
     const alvo = blobs[0].downloadUrl || blobs[0].url;
-    const r = await fetch(alvo, { cache: 'no-store' });
+    const tk = process.env.BLOB_READ_WRITE_TOKEN;
+    const r = await fetch(alvo, {
+      cache: 'no-store',
+      headers: tk ? { authorization: 'Bearer ' + tk } : {},
+    });
+    if (r.status === 404) return null;
     if (!r.ok) throw new Error('HTTP ' + r.status + ' ao baixar o arquivo do calendario');
     const txt = await r.text();
     return (!txt || txt === 'null') ? null : JSON.parse(txt);
