@@ -1,10 +1,10 @@
 // Guarda o proximo jogo do time num arquivo unico, para que a edicao de um
 // valha para todo mundo que abrir o site.
 //
-// Usa o Blob Store da Vercel. O store pode ser privado ou publico, entao
-// tentamos os dois modos em vez de adivinhar. Se nada funcionar, devolvemos o
-// erro real e o dashboard volta a guardar so no navegador de quem editou.
-import { put, get } from '@vercel/blob';
+// Importante: importamos o pacote inteiro em vez de nomes soltos. Se uma funcao
+// nao existir na versao instalada, aqui ela vira undefined e o codigo escolhe
+// outro caminho — em vez de derrubar a rota logo na inicializacao.
+import * as blob from '@vercel/blob';
 
 const ARQUIVO = 'calendario.json';
 const MODOS = ['private', 'public'];
@@ -13,24 +13,37 @@ async function corpoDe(r) {
   if (!r) return null;
   if (typeof r.text === 'function') return await r.text();
   if (r.stream) return await new Response(r.stream).text();
-  if (r.body) return await new Response(r.body).text();
+  if (r.body)   return await new Response(r.body).text();
   if (r.url) { const f = await fetch(r.url, { cache: 'no-store' }); return f.ok ? await f.text() : null; }
   return null;
 }
+const naoAchou = (e) => /not found|404|no such|does not exist/i.test(String(e && e.message));
 
 async function ler() {
   let ultimo = null;
-  for (const access of MODOS) {
-    try {
-      const r = await get(ARQUIVO, { access, useCache: false });
-      const txt = await corpoDe(r);
-      if (txt == null || txt === '' || txt === 'null') return null;
-      return JSON.parse(txt);
-    } catch (e) {
-      if (/not found|404|no such/i.test(String(e && e.message))) return null;
-      ultimo = e;
+
+  // caminho novo: get() le tambem de store privado
+  if (typeof blob.get === 'function') {
+    for (const access of MODOS) {
+      try {
+        const txt = await corpoDe(await blob.get(ARQUIVO, { access, useCache: false }));
+        if (txt == null || txt === '' || txt === 'null') return null;
+        return JSON.parse(txt);
+      } catch (e) { if (naoAchou(e)) return null; ultimo = e; }
     }
   }
+
+  // caminho antigo: achar pela listagem e baixar a url
+  try {
+    const { blobs } = await blob.list({ prefix: ARQUIVO, limit: 1 });
+    if (!blobs || !blobs.length) return null;
+    const alvo = blobs[0].downloadUrl || blobs[0].url;
+    const r = await fetch(alvo, { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' ao baixar o arquivo do calendario');
+    const txt = await r.text();
+    return (!txt || txt === 'null') ? null : JSON.parse(txt);
+  } catch (e) { if (naoAchou(e)) return null; ultimo = ultimo || e; }
+
   if (ultimo) throw ultimo;
   return null;
 }
@@ -39,7 +52,7 @@ async function gravar(dados) {
   let ultimo = null;
   for (const access of MODOS) {
     try {
-      await put(ARQUIVO, JSON.stringify(dados), {
+      await blob.put(ARQUIVO, JSON.stringify(dados), {
         access,
         addRandomSuffix: false,
         allowOverwrite: true,
@@ -63,7 +76,6 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       return res.status(200).json({ ok: true, dados: await ler() });
     }
-
     if (req.method === 'POST') {
       let corpo = req.body;
       if (typeof corpo === 'string') { try { corpo = JSON.parse(corpo); } catch { corpo = null; } }
@@ -78,18 +90,15 @@ export default async function handler(req, res) {
       const modo = await gravar(limpo);
       return res.status(200).json({ ok: true, dados: limpo, modo });
     }
-
     return res.status(405).json({ ok: false, motivo: 'metodo nao suportado' });
   } catch (e) {
-    // mensagem crua de proposito: e o que permite descobrir o que falhou
     return res.status(200).json({
       ok: false,
       motivo: String(e && e.message ? e.message : e).slice(0, 300),
-      tem: {
-        storeId: Boolean(process.env.BLOB_STORE_ID),
-        oidc: Boolean(process.env.VERCEL_OIDC_TOKEN),
-        token: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
-      },
+      sdk: { get: typeof blob.get, put: typeof blob.put, list: typeof blob.list },
+      tem: { storeId: Boolean(process.env.BLOB_STORE_ID),
+             oidc: Boolean(process.env.VERCEL_OIDC_TOKEN),
+             token: Boolean(process.env.BLOB_READ_WRITE_TOKEN) },
     });
   }
 }
