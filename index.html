@@ -870,7 +870,8 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
           chamá-la a partir de outro site. Por isso a atualização acontece pelo seu próprio navegador, em dois
           passos — o botão te guia.</div>
         </div>
-        <p style="margin:12px 0 0;color:var(--ink3);font-size:13px;max-width:66ch" id="refreshMsg"></p>
+        <p style="margin:12px 0 0;color:var(--good);font-size:13px;max-width:66ch;font-weight:600" id="avisoSync"></p>
+        <p style="margin:6px 0 0;color:var(--ink3);font-size:13px;max-width:66ch" id="refreshMsg"></p>
 
         <div id="guia" hidden style="margin-top:18px">
           <div class="passos">
@@ -908,7 +909,7 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
         </div>
 
         <p style="margin:18px 0 0;font-size:12.5px;color:var(--ink3)">
-          As atualizações ficam salvas neste navegador.
+          O histórico fica guardado no servidor e vale para todo mundo.
           <button id="btnExport" class="linkbtn">Exportar o histórico</button> ·
           <button id="btnReset" class="linkbtn">Voltar aos dados publicados</button>
         </p>
@@ -3662,6 +3663,50 @@ function mergeMatches(incoming){
   DATA.matches.forEach((m,i)=>m.order=i+1);
   return {added,upd,travadas};
 }
+/* ============ histórico compartilhado ============ */
+let COMPARTILHADO = false;      // o servidor está guardando o histórico?
+let ENVIANDO = null;
+
+async function carregaEstado(){
+  try{
+    const r = await fetch('/api/dados', {cache:'no-store'});
+    const j = await r.json();
+    if(!j || !j.ok) return false;
+    COMPARTILHADO = true;
+    if(j.dados && Array.isArray(j.dados.matches) && j.dados.matches.length){
+      DATA.matches = j.dados.matches;
+      if(j.dados.roster) DATA.roster = j.dados.roster;
+      DATA.generated = j.dados.em || DATA.generated;
+    }
+    return true;
+  }catch(e){ return false; }
+}
+
+async function salvaEstado(){
+  if(!COMPARTILHADO) return 'local';
+  // evita dois envios ao mesmo tempo
+  if(ENVIANDO) { try{ await ENVIANDO; }catch(e){} }
+  ENVIANDO = (async ()=>{
+    const r = await fetch('/api/dados', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({matches: DATA.matches, roster: DATA.roster})});
+    const j = await r.json();
+    if(!j || !j.ok) throw new Error(j && j.motivo ? j.motivo : 'falha ao publicar');
+    return j;
+  })();
+  try{ await ENVIANDO; return 'todos'; }
+  catch(e){ return 'erro:' + e.message; }
+  finally{ ENVIANDO = null; }
+}
+
+async function zeraEstado(){
+  if(!COMPARTILHADO) return;
+  try{
+    await fetch('/api/dados', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({matches: [], zerar: true})});
+  }catch(e){}
+}
+
 function saveExtra(){
   try{ localStorage.setItem(LSKEY, JSON.stringify(
     DATA.matches.filter(m=>!RAW.matches.some(r=>r.id===m.id)) )); }catch(e){}
@@ -4020,7 +4065,16 @@ function aplicarIncoming(inc){
   const r = mergeMatches(inc);
   DATA.generated = new Date().toISOString();
   saveExtra(); picked=null; curMatch=null; renderAll();
+  if(r.added || r.upd) publica();
   return r;
+}
+/* publica o histórico para todo mundo e avisa na tela */
+async function publica(){
+  if(!COMPARTILHADO) return;
+  const onde = await salvaEstado();
+  if(onde === 'todos') toast('Histórico publicado para todo o time.', 'ok');
+  else if(String(onde).startsWith('erro:'))
+    toast('Salvei aqui, mas não consegui publicar: '+String(onde).slice(5), 'err');
 }
 async function atualizar(){
   const b=$('#btnRefresh'), ico=b.querySelector('svg'), txt=$('#btnRefreshTxt');
@@ -4107,10 +4161,15 @@ $('#btnExport').onclick = async ()=>{
   }catch(e){ toast('Não foi possível gerar o arquivo aqui.','err'); }
 };
 
-$('#btnReset').onclick=()=>{
+$('#btnReset').onclick=async ()=>{
+  if(COMPARTILHADO && !confirm(
+      'Isso apaga o histórico compartilhado e devolve TODO O TIME aos dados originais.\n\nTem certeza?'))
+    return;
   try{ localStorage.removeItem(LSKEY); }catch(e){}
+  await zeraEstado();
   DATA = structuredClone(RAW); picked=null; curMatch=null; renderAll();
-  toast('Voltou para os dados publicados.'); msgAtualizar('Voltou para os dados publicados.');
+  const m = COMPARTILHADO ? 'Todo o time voltou aos dados originais.' : 'Voltou para os dados publicados.';
+  toast(m); msgAtualizar(m);
 };
 
 
@@ -4300,7 +4359,7 @@ $('#btnDelMatch').onclick = ()=>{
   DATA.generated = new Date().toISOString();
   saveExtra(); picked=null; curMatch=null; editandoId=null;
   entry.hidden=true; fileIn.value=''; renderAll();
-  toast('Partida removida.','ok');
+  toast('Partida removida.','ok'); publica();
 };
 
 $('#btnSaveMatch').onclick = ()=>{
@@ -4339,6 +4398,7 @@ $('#btnSaveMatch').onclick = ()=>{
   saveExtra(); picked=null; curMatch=jogo.id; renderAll();
   entry.hidden=true; fileIn.value=''; editandoId=null;
   toast((antiga?'Partida atualizada: ':'Partida adicionada: ')+'Bloco 7 '+gf+'x'+ga+' '+opp, 'ok');
+  publica();
 };
 
 
@@ -4682,6 +4742,14 @@ try{ const s=localStorage.getItem('bloco7:tab'); if(s&&TABS.includes(s)) start=s
 TABS.forEach(t=>$('#p-'+t).hidden = t!==start);
 renderAll();
 carregaProximo();
+// puxa o histórico compartilhado e redesenha com ele
+carregaEstado().then(ok=>{
+  if(ok){ picked=null; curMatch=null; renderAll(); }
+  const av = $('#avisoSync');
+  if(av) av.textContent = ok
+    ? 'O que você atualizar aqui vale para todo o time.'
+    : 'Sem servidor de histórico: o que você atualizar fica só neste navegador.';
+});
 })();
 </script>
 
