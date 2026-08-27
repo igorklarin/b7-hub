@@ -2,17 +2,20 @@
 
     index.html        o dashboard inteiro (um arquivo só)
     api/matches.js    busca os amistosos na API da EA pelo servidor
+    vercel.json       fixa a função em São Paulo (gru1)
 
-A pasta `api/` precisa ficar do lado do `index.html`, com esse nome exato.
-É ela que faz o botão "Atualizar" funcionar pra qualquer pessoa que abrir o site:
-rodando no servidor não existe bloqueio de CORS.
+## Por que a região importa
 
-## Como atualizar o site depois
+A EA usa Akamai e barra requisição vinda de datacenter dos Estados Unidos, que é
+onde a Vercel roda por padrão (Washington, `iad1`). O `vercel.json` muda isso para
+`gru1`, São Paulo — muito mais perto de onde o time joga e com chance real de passar.
 
-No GitHub, dentro do repositório:
+Se mesmo assim a EA recusar, a função devolve um diagnóstico e o dashboard cai
+sozinho no fluxo de copiar/colar, que sai do navegador de casa e sempre funciona.
 
-1. **Add file → Upload files**
-2. Arraste o `index.html` novo
-3. **Commit changes**
+## Como atualizar o site
 
-A Vercel republica sozinha em menos de um minuto. Não precisa mexer em mais nada.
+    cd $HOME\bloco7
+    git add . ; git commit -m "ajuste" ; git push
+
+A Vercel republica sozinha em menos de um minuto.
