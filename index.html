@@ -193,9 +193,24 @@ tbody tr:last-child td{border-bottom:0}
 tbody tr.clickable{cursor:pointer}
 tbody tr.clickable:hover td{background:var(--surf2)}
 .pname{display:flex; align-items:center; gap:10px}
-.pav{width:29px; height:29px; border-radius:8px; flex:none; display:grid; place-items:center;
-  background:linear-gradient(150deg,var(--wine2),var(--wine)); color:#fff; font-size:11px; font-weight:700;
-  font-family:"Instrument Sans",sans-serif}
+.pav{
+  position:relative; width:30px; height:30px; border-radius:999px; flex:none;
+  display:inline-grid; place-items:center; vertical-align:middle;
+  background:linear-gradient(150deg,var(--wine2),var(--wine)); color:#fff;
+  font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:700;
+  font-variant-numeric:tabular-nums; letter-spacing:-.02em;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);
+}
+.pav.n3{font-size:11px; letter-spacing:-.06em}
+.pav.grande{width:48px; height:48px; font-size:19px}
+.pav.grande.n3{font-size:16px}
+.bracadeira{
+  position:absolute; top:-6px; right:-7px; width:15px; height:15px; border-radius:999px;
+  background:var(--accent); color:#20140a; font-family:"Instrument Sans",sans-serif;
+  font-size:9px; font-weight:800; display:grid; place-items:center;
+  box-shadow:0 0 0 2px var(--surf);
+}
+.pav.grande .bracadeira{width:20px; height:20px; font-size:11px; top:-7px; right:-8px}
 .pname .n{font-weight:600}
 .pname .g{font-size:11px; color:var(--ink3); font-family:"IBM Plex Mono",monospace}
 .pos{display:inline-block; padding:2px 7px; border-radius:6px; background:var(--surf3); color:var(--ink2);
@@ -326,7 +341,7 @@ dialog{
 dialog::backdrop{background:color-mix(in srgb,#1B0C14 72%,transparent); backdrop-filter:blur(3px)}
 .dlghead{display:flex; align-items:center; gap:14px; padding:20px;
   background:linear-gradient(140deg, color-mix(in srgb,var(--wine) 32%, var(--surf)), var(--surf))}
-.dlghead .pav{width:48px; height:48px; border-radius:12px; font-size:17px}
+/* o avatar grande da ficha usa .pav.grande */
 .dlghead h3{font-family:Anton,sans-serif; font-size:26px; line-height:1}
 .dlghead .sub{font-size:12px; color:var(--ink2); margin-top:4px; font-family:"IBM Plex Mono",monospace}
 .dlgclose{margin-left:auto; width:38px; height:38px; border-radius:999px; border:1px solid var(--line);
@@ -408,10 +423,15 @@ th[data-tip]{cursor:help}
 }
 .tok.arrastando{cursor:grabbing; z-index:9}
 .tok .disc{
-  width:34px; height:34px; margin:0 auto; border-radius:999px; display:grid; place-items:center;
-  background:linear-gradient(160deg,var(--wine2),var(--wine)); color:#fff; font-size:11px; font-weight:800;
+  position:relative; width:34px; height:34px; margin:0 auto; border-radius:999px;
+  display:grid; place-items:center;
+  background:linear-gradient(160deg,var(--wine2),var(--wine)); color:#fff;
+  font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:700;
+  font-variant-numeric:tabular-nums; letter-spacing:-.03em;
   border:2px solid rgba(255,255,255,.92); box-shadow:0 3px 10px rgba(0,0,0,.45);
 }
+.tok .disc.n3{font-size:11px; letter-spacing:-.07em}
+.tok .disc .bracadeira{top:-7px; right:-7px; box-shadow:0 0 0 2px rgba(20,50,30,.9)}
 .tok.vazio .disc{background:rgba(0,0,0,.4); border-style:dashed; color:rgba(255,255,255,.75)}
 .tok.bola{width:38px; height:38px; background:none; padding:0; display:grid; place-items:center}
 .tok.bola .disc{width:20px; height:20px; background:#fff; color:#1a1a1a; font-size:13px;
@@ -1066,7 +1086,9 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
    "pos2": "",
    "alias": [
     "Igor Fernandes"
-   ]
+   ],
+   "num": 99,
+   "cap": true
   },
   "Michel": {
    "gt": "mecdookiee",
@@ -1076,7 +1098,9 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
     "Dookie",
     "dookiee",
     "L. Mei"
-   ]
+   ],
+   "num": 14,
+   "cap": false
   },
   "Galo": {
    "gt": "GalodoVigor",
@@ -1085,7 +1109,9 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
    "alias": [
     "G. Vigorento",
     "Pim pim"
-   ]
+   ],
+   "num": 67,
+   "cap": false
   },
   "Sodré": {
    "gt": "SodreNDE",
@@ -1093,7 +1119,9 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
    "pos2": "PD/PE",
    "alias": [
     "Sodre"
-   ]
+   ],
+   "num": 10,
+   "cap": false
   },
   "Lobato": {
    "gt": "Lobatonelek",
@@ -1101,7 +1129,9 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
    "pos2": "VOL/LD/LE",
    "alias": [
     "Morgana"
-   ]
+   ],
+   "num": 4,
+   "cap": false
   },
   "Yuri": {
    "gt": "yraobr12",
@@ -1109,7 +1139,9 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
    "pos2": "",
    "alias": [
     "Y. Araujo"
-   ]
+   ],
+   "num": 66,
+   "cap": false
   },
   "Applinho": {
    "gt": "GnSPedro",
@@ -1119,7 +1151,9 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
     "Apple",
     "Applle",
     "R Calvos"
-   ]
+   ],
+   "num": 6,
+   "cap": false
   },
   "Philipetti": {
    "gt": "MathiasPhil",
@@ -1128,7 +1162,9 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
    "alias": [
     "Mathias Phil",
     "Filipeti"
-   ]
+   ],
+   "num": 25,
+   "cap": false
   },
   "MT": {
    "gt": "rob1Nwood",
@@ -1136,13 +1172,17 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
    "pos2": "LD/LE",
    "alias": [
     "magli"
-   ]
+   ],
+   "num": 2,
+   "cap": false
   },
   "Queres": {
    "gt": "QueresGamer",
    "pos": "ZAG",
    "pos2": "VOL",
-   "alias": []
+   "alias": [],
+   "num": 3,
+   "cap": false
   },
   "VtR1": {
    "gt": "lVTr1l",
@@ -1152,7 +1192,9 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
     "VTr1",
     "Vtr",
     "VTR"
-   ]
+   ],
+   "num": 8,
+   "cap": false
   },
   "Caio": {
    "gt": "caiocosta0760",
@@ -1160,7 +1202,9 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
    "pos2": "ATA",
    "alias": [
     "Caiozin"
-   ]
+   ],
+   "num": 7,
+   "cap": false
   },
   "Pedroca": {
    "gt": "xLecOx",
@@ -1168,13 +1212,16 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
    "pos2": "",
    "alias": [
     "J. Vicente"
-   ]
+   ],
+   "cap": false
   },
   "Campelo": {
    "gt": "",
    "pos": "ZAG",
    "pos2": "VOL/LD/LE",
-   "alias": []
+   "alias": [],
+   "num": 18,
+   "cap": false
   }
  },
  "matches": [
@@ -2819,6 +2866,18 @@ const n1 = v => (Math.round(v*10)/10).toFixed(1);
 const n2 = v => (Math.round(v*100)/100).toFixed(2);
 const cssv = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const initials = s => s.replace(/[^A-Za-zÀ-ÿ ]/g,'').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase() || '?';
+/* número da camisa; sem número, volta pra inicial */
+const camisa = nome => {
+  const r = DATA.roster[nome];
+  return (r && r.num != null) ? String(r.num) : initials(nome);
+};
+const ehCapitao = nome => Boolean(DATA.roster[nome] && DATA.roster[nome].cap);
+/* avatar redondo com número e, se for o caso, a braçadeira */
+const avatar = (nome, cls) => {
+  const n = camisa(nome);
+  return '<span class="pav'+(cls?' '+cls:'')+(n.length>2?' n3':'')+'">'+esc(n)
+    + (ehCapitao(nome) ? '<span class="bracadeira" title="Capitão">C</span>' : '') + '</span>';
+};
 /* escala por comparação com a média do elenco */
 function media(vals){
   const v = vals.filter(x=>x!=null && !isNaN(x));
@@ -3312,7 +3371,7 @@ function renderSquad(){
   const row = p => {
     const tr = el('tr', p.gp?'clickable':'');
     tr.innerHTML =
-      '<td><div class="pname"><div class="pav">'+esc(initials(p.name))+'</div><div><div class="n">'+esc(p.name)+'</div>'
+      '<td><div class="pname">'+avatar(p.name)+'<div><div class="n">'+esc(p.name)+'</div>'
         +(p.gt?'<div class="g">'+esc(p.gt)+'</div>':'')+'</div></div></td>'
       +'<td style="text-align:left"><span class="pos">'+esc(p.pos)+'</span>'
         +(p.pos2?' <span class="pos2">'+esc(p.pos2)+'</span>':'')+'</td>'
@@ -3457,7 +3516,7 @@ function renderMatchDetail(m){
         + '</tr></thead><tbody>'
         + linhas.map(p=>{
           const r = DATA.roster[p.p]||{};
-          return '<tr class="clickable" data-p="'+esc(p.p)+'"><td><div class="pname"><div class="pav">'+esc(initials(p.p))+'</div>'
+          return '<tr class="clickable" data-p="'+esc(p.p)+'"><td><div class="pname">'+avatar(p.p)
             +'<div><div class="n">'+esc(p.p)+'</div>'+(r.gt?'<div class="g">'+esc(r.gt)+'</div>':'')+'</div></div></td>'
             +'<td style="text-align:left"><span class="pos">'+esc(p.gpos||r.pos||'—')+'</span></td>'
             +'<td><span class="rate '+tier(p.rating)+'">'+(p.rating!=null?n1(p.rating).replace('.',','):'—')+'</span>'
@@ -3558,7 +3617,7 @@ function abrirPodio(cat, lista){
     + lista.slice(0,8).map((p,i)=>
         '<button class="podrow'+(i<3?' top':'')+'" data-p="'+esc(p.name)+'">'
         + '<span class="pos-n">'+(i<3?medalha[i]:(i+1)+'º')+'</span>'
-        + '<span class="pav">'+esc(initials(p.name))+'</span>'
+        + avatar(p.name)
         + '<span class="podnome"><b>'+esc(p.name)+'</b><span>'+cat.met(p)+'</span></span>'
         + '<span class="podval">'+cat.val(p)+'</span></button>').join('')
     + '</div>'
@@ -3582,7 +3641,7 @@ function openPlayer(name){
     ['Desarmes', p.apiGames?p.tm+'/'+p.ta:'—'], ['MOTM', p.mom],
   ];
   d.innerHTML =
-    '<div class="dlghead"><div class="pav">'+esc(initials(p.name))+'</div>'
+    '<div class="dlghead">'+avatar(p.name,'grande')
     +'<div><h3 id="pDlgName">'+esc(p.name)+'</h3><div class="sub">'+(p.gt?esc(p.gt)+' · ':'')+esc(p.pos)+(p.pos2?' / '+esc(p.pos2):'')+'</div></div>'
     +'<button class="dlgclose" aria-label="Fechar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>'
     +'<div class="dlgbody"><div class="statgrid">'
@@ -3734,7 +3793,13 @@ async function carregaEstado(){
     COMPARTILHADO = true;
     if(j.dados && Array.isArray(j.dados.matches) && j.dados.matches.length){
       DATA.matches = j.dados.matches;
-      if(j.dados.roster) DATA.roster = j.dados.roster;
+      if(j.dados.roster){
+        // o elenco publicado manda nos números, posições e apelidos;
+        // do servidor vêm só jogadores que ainda não existem aqui
+        const junto = {...j.dados.roster};
+        Object.entries(RAW.roster).forEach(([k,v])=>{ junto[k] = {...(junto[k]||{}), ...v}; });
+        DATA.roster = junto;
+      }
       DATA.generated = j.dados.em || DATA.generated;
     }
     return true;
@@ -3974,7 +4039,9 @@ function renderEscala(){
     t.setAttribute('aria-label', sl.pos+(sl.jogador?': '+sl.jogador:' — vazio'));
     const r = sl.jogador ? DATA.roster[sl.jogador] : null;
     const apt = sl.jogador ? aptidao(sl.jogador, sl.pos) : null;
-    t.innerHTML = '<span class="disc">'+(sl.jogador?esc(initials(sl.jogador)):'+')+'</span>'
+    t.innerHTML = '<span class="disc'+(sl.jogador&&camisa(sl.jogador).length>2?' n3':'')+'">'
+      + (sl.jogador?esc(camisa(sl.jogador)):'+')
+      + (sl.jogador&&ehCapitao(sl.jogador)?'<span class="bracadeira">C</span>':'')+'</span>'
       + '<span class="lab">'+(sl.jogador?esc(sl.jogador):'')+'</span>'
       + '<span class="slotpos">'+esc(sl.pos)+(apt&&apt.n>2?' ⚠':'')+'</span>';
     campo.appendChild(t);
