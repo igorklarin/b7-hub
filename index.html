@@ -536,6 +536,8 @@ th[data-tip]{cursor:help}
   background:var(--surf2); border:1px solid var(--line); font-size:12.5px;
 }
 .prox-fila .item b{font-weight:700}
+.prox-fila .item.passou{opacity:.55}
+.prox-fila .item.passou b{text-decoration:line-through}
 .prox-fila .item span{color:var(--ink3); font-family:"IBM Plex Mono",monospace; font-size:11.5px}
 .prox-slot{border:1px solid var(--line); border-radius:var(--r-sm); padding:13px 14px 2px; margin-bottom:11px;
   background:var(--surf2)}
@@ -4967,14 +4969,25 @@ function quandoDe(j){
   const d = new Date(j.data + 'T' + (j.hora || '21:00'));
   return isNaN(d) ? null : d;
 }
-// primeiro os que têm data (do mais próximo pro mais distante), depois os sem data
+// um jogo só conta como passado 2h depois do apito inicial,
+// pra ele não sumir do destaque enquanto o time ainda está jogando
+const DURACAO = 2 * 3600 * 1000;
+function jaPassou(j){
+  const q = quandoDe(j);
+  return Boolean(q) && (Date.now() - q > DURACAO);
+}
+// a barra grande é sempre o próximo jogo que ainda vai acontecer.
+// ordem: 1) os que estão por vir, do mais perto pro mais longe
+//        2) os sem data marcada
+//        3) os que já aconteceram, do mais recente pro mais antigo
 function emOrdem(lista){
+  const grupo = j => jaPassou(j) ? 2 : (quandoDe(j) ? 0 : 1);
   return lista.slice().sort((a,b)=>{
+    const ga = grupo(a), gb = grupo(b);
+    if(ga !== gb) return ga - gb;
     const da = quandoDe(a), db = quandoDe(b);
-    if(da && db) return da - db;
-    if(da) return -1;
-    if(db) return 1;
-    return 0;
+    if(!da || !db) return 0;
+    return ga === 2 ? db - da : da - db;
   });
 }
 try{ PROX = comoLista(JSON.parse(localStorage.getItem(PROX_KEY)||'null')); }catch(e){}
@@ -5036,7 +5049,8 @@ function renderProximo(){
 
   const lista = emOrdem(PROX);
   const lab = $('#proxLab');
-  if(lab) lab.textContent = lista.length > 1 ? 'Próximos jogos' : 'Próximo jogo';
+  const porVir = lista.filter(j => !jaPassou(j)).length;
+  if(lab) lab.textContent = porVir > 1 ? 'Próximos jogos' : 'Próximo jogo';
 
   if(!lista.length){
     vista.innerHTML = '<span class="vazio">Nenhuma partida marcada. Clique em Editar para agendar.</span>';
@@ -5055,8 +5069,9 @@ function renderProximo(){
     const resto = lista.slice(1);
     fila.hidden = !resto.length;
     fila.innerHTML = resto.map(j =>
-      '<span class="item"><b>' + esc(j.opp) + '</b><span>' + esc(dataCurta(j))
-      + (j.obs ? ' · ' + esc(j.obs) : '') + '</span></span>').join('');
+      '<span class="item' + (jaPassou(j) ? ' passou' : '') + '"><b>' + esc(j.opp) + '</b><span>'
+      + esc(dataCurta(j)) + (jaPassou(j) ? ' · já passou' : (j.obs ? ' · ' + esc(j.obs) : ''))
+      + '</span></span>').join('');
   }
 
   const quando = quandoDe(p);
@@ -5066,7 +5081,9 @@ function renderProximo(){
   const dias = Math.ceil((quando - agora) / 86400000);
   const horas = Math.round((quando - agora) / 3600000);
   cd.classList.remove('agora');
-  if(quando < agora){ cd.innerHTML = '<b>—</b><span>já passou</span>'; }
+  if(quando < agora && !jaPassou(p)){ cd.classList.add('agora');
+    cd.innerHTML = '<b>•</b><span>em jogo</span>'; }
+  else if(quando < agora){ cd.innerHTML = '<b>—</b><span>já passou</span>'; }
   else if(horas <= 24){ cd.classList.add('agora');
     cd.innerHTML = '<b>'+Math.max(1,horas)+'</b><span>hora'+(horas===1?'':'s')+'</span>'; }
   else { cd.innerHTML = '<b>'+dias+'</b><span>dia'+(dias===1?'':'s')+'</span>'; }
