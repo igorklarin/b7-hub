@@ -1,5 +1,5 @@
-// Guarda o proximo jogo do time num arquivo unico, para que a edicao de um
-// valha para todo mundo que abrir o site.
+// Guarda o calendario do time (ate 3 jogos marcados) num arquivo unico,
+// para que a edicao de um valha para todo mundo que abrir o site.
 //
 // Importante: importamos o pacote inteiro em vez de nomes soltos. Se uma funcao
 // nao existir na versao instalada, aqui ela vira undefined e o codigo escolhe
@@ -7,6 +7,23 @@
 import * as blob from '@vercel/blob';
 
 const ARQUIVO = 'calendario.json';
+const MAX_JOGOS = 3;
+
+// aceita o formato antigo (um jogo solto) e o novo (lista), sempre devolve lista
+function comoLista(v) {
+  if (!v) return [];
+  const arr = Array.isArray(v) ? v : (Array.isArray(v.jogos) ? v.jogos : [v]);
+  return arr
+    .filter((x) => x && typeof x === 'object' && x.opp)
+    .slice(0, MAX_JOGOS)
+    .map((x) => ({
+      opp:  String(x.opp  ?? '').slice(0, 60),
+      data: String(x.data ?? '').slice(0, 10),
+      hora: String(x.hora ?? '').slice(0, 5),
+      obs:  String(x.obs  ?? '').slice(0, 80),
+      em:   new Date().toISOString(),
+    }));
+}
 const MODOS = ['private', 'public'];
 
 async function corpoDe(r) {
@@ -80,19 +97,12 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      return res.status(200).json({ ok: true, dados: await ler() });
+      return res.status(200).json({ ok: true, dados: comoLista(await ler()) });
     }
     if (req.method === 'POST') {
       let corpo = req.body;
       if (typeof corpo === 'string') { try { corpo = JSON.parse(corpo); } catch { corpo = null; } }
-      const vazio = !corpo || typeof corpo !== 'object' || !corpo.opp;
-      const limpo = vazio ? null : {
-        opp:  String(corpo.opp  ?? '').slice(0, 60),
-        data: String(corpo.data ?? '').slice(0, 10),
-        hora: String(corpo.hora ?? '').slice(0, 5),
-        obs:  String(corpo.obs  ?? '').slice(0, 80),
-        em:   new Date().toISOString(),
-      };
+      const limpo = comoLista(corpo);
       const modo = await gravar(limpo);
       return res.status(200).json({ ok: true, dados: limpo, modo });
     }

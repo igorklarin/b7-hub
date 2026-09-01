@@ -528,6 +528,20 @@ th[data-tip]{cursor:help}
 .prox-cd b{display:block; font-family:Anton,sans-serif; font-size:26px; line-height:1}
 .prox-cd span{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink3)}
 .prox-cd.agora b{color:var(--accent)}
+.prox-fila[hidden]{display:none}
+.prox-fila{flex-basis:100%; display:flex; flex-wrap:wrap; gap:8px; padding-top:13px; margin-top:2px;
+  border-top:1px solid var(--line)}
+.prox-fila .item{
+  display:flex; align-items:baseline; gap:8px; padding:6px 11px; border-radius:999px;
+  background:var(--surf2); border:1px solid var(--line); font-size:12.5px;
+}
+.prox-fila .item b{font-weight:700}
+.prox-fila .item span{color:var(--ink3); font-family:"IBM Plex Mono",monospace; font-size:11.5px}
+.prox-slot{border:1px solid var(--line); border-radius:var(--r-sm); padding:13px 14px 2px; margin-bottom:11px;
+  background:var(--surf2)}
+.prox-slot .cab{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px}
+.prox-slot .cab b{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink3)}
+.prox-slot .cab button{font-size:11.5px; padding:4px 9px}
 .passos{display:grid; gap:14px}
 .passo{display:flex; gap:14px; align-items:flex-start; padding:14px 16px; border-radius:var(--r-sm);
   background:var(--surf2); border:1px solid var(--line)}
@@ -617,7 +631,7 @@ th[data-tip]{cursor:help}
     <section>
       <div class="card proximo" id="cardProximo">
         <div class="prox-info">
-          <div class="prox-lab">Próximo jogo</div>
+          <div class="prox-lab" id="proxLab">Próximo jogo</div>
           <div class="prox-linha" id="proxVista"></div>
         </div>
         <div class="prox-cd" id="proxContagem"></div>
@@ -625,17 +639,13 @@ th[data-tip]{cursor:help}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
           <span id="btnEditProxTxt">Editar</span>
         </button>
+        <div class="prox-fila" id="proxFila" hidden></div>
       </div>
       <div class="card pad" id="formProximo" hidden style="margin-top:12px">
-        <div class="fgrid">
-          <div class="fld"><label for="pxOpp">Adversário</label><input id="pxOpp" type="text" placeholder="Nome do time"></div>
-          <div class="fld"><label for="pxData">Data</label><input id="pxData" type="date"></div>
-          <div class="fld"><label for="pxHora">Horário</label><input id="pxHora" type="time"></div>
-          <div class="fld"><label for="pxObs">Observação</label><input id="pxObs" type="text" placeholder="amistoso, campeonato…"></div>
-        </div>
+        <div id="proxSlots"></div>
         <div class="toolbar" style="margin-top:6px">
           <button class="btn primary" id="btnSalvaProx">Salvar</button>
-          <button class="btn" id="btnLimpaProx">Tirar do calendário</button>
+          <button class="btn" id="btnLimpaProx">Limpar calendário</button>
           <span id="proxStatus" style="font-size:12.5px;color:var(--ink3)"></span>
         </div>
       </div>
@@ -1214,13 +1224,16 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
    "alias": [
     "J. Vicente"
    ],
-   "cap": false
+   "cap": false,
+   "num": 5
   },
   "Campelo": {
-   "gt": "",
+   "gt": "Campelo10",
    "pos": "ZAG",
    "pos2": "VOL/LD/LE",
-   "alias": [],
+   "alias": [
+    "Campelo 10"
+   ],
    "num": 18,
    "cap": false
   }
@@ -3669,6 +3682,33 @@ function gtIndex(){
   });
   return ix;
 }
+// Reaplica o de-para de apelidos em partidas que ja estao gravadas.
+// Serve pra consertar duplicata que entrou antes do apelido existir
+// (o "Campelo10" que a EA devolveu virou um segundo jogador no hub).
+function normalizaNomes(matches){
+  const ix = gtIndex();
+  let trocas = 0;
+  (matches||[]).forEach(m=>{
+    (m.players||[]).forEach(p=>{
+      const certo = ix[String(p.p||'').toLowerCase()];
+      if(certo && certo !== p.p){ p.p = certo; trocas++; }
+    });
+    // se o mesmo jogador apareceu duas vezes na partida, soma as linhas
+    const porNome = new Map();
+    (m.players||[]).forEach(p=>{
+      const j = porNome.get(p.p);
+      if(!j){ porNome.set(p.p, p); return; }
+      ['g','a','sh','pm','pa','tm','ta','red'].forEach(k=> j[k] = (+j[k]||0) + (+p[k]||0));
+      j.mom = Math.max(+j.mom||0, +p.mom||0);
+      if(j.rating==null) j.rating = p.rating;
+      else if(p.rating!=null) j.rating = Math.max(j.rating, p.rating);
+      trocas++;
+    });
+    if(porNome.size !== (m.players||[]).length) m.players = [...porNome.values()];
+  });
+  return trocas;
+}
+
 function parseEA(json){
   const arr = typeof json === 'string' ? JSON.parse(json) : json;
   if(!Array.isArray(arr)) throw new Error('esperava uma lista de partidas');
@@ -3784,6 +3824,7 @@ async function salvaJogadas(){
 
 /* ============ histórico compartilhado ============ */
 let COMPARTILHADO = false;      // o servidor está guardando o histórico?
+let PRECISA_REPUBLICAR = false; // achamos algo pra consertar no que veio do servidor
 let ENVIANDO = null;
 
 async function carregaEstado(){
@@ -3801,6 +3842,21 @@ async function carregaEstado(){
         Object.entries(RAW.roster).forEach(([k,v])=>{ junto[k] = {...(junto[k]||{}), ...v}; });
         DATA.roster = junto;
       }
+      // o servidor pode ter nomes de antes de o apelido existir (ex.: "Campelo10").
+      // refaz o de-para e, se mudou algo, devolve corrigido pra todo mundo.
+      // apaga do elenco quem o servidor criou por engano e que hoje
+      // ja tem dono no elenco publicado (ex.: "Campelo10" -> Campelo)
+      const oficial = {};
+      Object.entries(RAW.roster).forEach(([nm,r])=>{
+        oficial[nm.toLowerCase()] = nm;
+        if(r.gt) oficial[r.gt.toLowerCase()] = nm;
+        (r.alias||[]).forEach(a=> oficial[String(a).toLowerCase()] = nm);
+      });
+      Object.keys(DATA.roster).forEach(nm=>{
+        const dono = oficial[nm.toLowerCase()];
+        if(dono && dono !== nm) delete DATA.roster[nm];
+      });
+      if(normalizaNomes(DATA.matches)) PRECISA_REPUBLICAR = true;
       DATA.generated = j.dados.em || DATA.generated;
     }
     return true;
@@ -4893,10 +4949,33 @@ document.addEventListener('keydown', e=>{
   }
 });
 
-/* ============ próximo jogo ============ */
+/* ============ calendário (até 3 jogos) ============ */
 const PROX_KEY = 'bloco7:proximo:v1';
-let PROX = null, PROX_COMPARTILHADO = false;
-try{ PROX = JSON.parse(localStorage.getItem(PROX_KEY)||'null'); }catch(e){}
+const MAX_JOGOS = 3;
+let PROX = [], PROX_COMPARTILHADO = false;
+
+// aceita tanto o formato antigo (um objeto só) quanto o novo (lista)
+function comoLista(v){
+  if(!v) return [];
+  const arr = Array.isArray(v) ? v : (Array.isArray(v.jogos) ? v.jogos : [v]);
+  return arr.filter(x => x && x.opp).slice(0, MAX_JOGOS);
+}
+function quandoDe(j){
+  if(!j || !j.data) return null;
+  const d = new Date(j.data + 'T' + (j.hora || '21:00'));
+  return isNaN(d) ? null : d;
+}
+// primeiro os que têm data (do mais próximo pro mais distante), depois os sem data
+function emOrdem(lista){
+  return lista.slice().sort((a,b)=>{
+    const da = quandoDe(a), db = quandoDe(b);
+    if(da && db) return da - db;
+    if(da) return -1;
+    if(db) return 1;
+    return 0;
+  });
+}
+try{ PROX = comoLista(JSON.parse(localStorage.getItem(PROX_KEY)||'null')); }catch(e){}
 
 async function carregaProximo(){
   try{
@@ -4904,55 +4983,82 @@ async function carregaProximo(){
     const j = await r.json();
     if(j && j.ok){
       PROX_COMPARTILHADO = true;
-      PROX = j.dados || null;
+      PROX = comoLista(j.dados);
       try{ localStorage.setItem(PROX_KEY, JSON.stringify(PROX)); }catch(e){}
     }
   }catch(e){ /* sem servidor: fica com o que estiver no navegador */ }
   renderProximo();
 }
-async function salvaProximo(obj){
+async function salvaProximo(lista){
+  const limpa = comoLista(lista);
   if(PROX_COMPARTILHADO){
     try{
       const r = await fetch('/api/calendario', {method:'POST',
-        headers:{'Content-Type':'application/json'}, body: JSON.stringify(obj||{})});
+        headers:{'Content-Type':'application/json'}, body: JSON.stringify({jogos: limpa})});
       const j = await r.json();
       if(j && j.ok){
-        PROX = j.dados || null;
+        PROX = comoLista(j.dados);
         try{ localStorage.setItem(PROX_KEY, JSON.stringify(PROX)); }catch(e){}
         return 'todos';
       }
     }catch(e){}
   }
-  PROX = (obj && obj.opp) ? obj : null;
+  PROX = limpa;
   try{
-    if(PROX) localStorage.setItem(PROX_KEY, JSON.stringify(PROX));
+    if(PROX.length) localStorage.setItem(PROX_KEY, JSON.stringify(PROX));
     else localStorage.removeItem(PROX_KEY);
   }catch(e){}
   return 'local';
 }
 
+function dataLonga(j){
+  const q = quandoDe(j);
+  if(!q) return 'sem data marcada';
+  return q.toLocaleDateString('pt-BR',{weekday:'long', day:'2-digit', month:'long'})
+       + (j.hora ? ' · ' + j.hora : '');
+}
+function dataCurta(j){
+  const q = quandoDe(j);
+  if(!q) return 'sem data';
+  return q.toLocaleDateString('pt-BR',{day:'2-digit', month:'2-digit'})
+       + (j.hora ? ' · ' + j.hora : '');
+}
+
 function renderProximo(){
-  const vista = $('#proxVista'), cd = $('#proxContagem');
+  const vista = $('#proxVista'), cd = $('#proxContagem'), fila = $('#proxFila');
   if(!vista) return;
   const st = $('#proxStatus');
   if(st) st.textContent = PROX_COMPARTILHADO
     ? 'o que você salvar aqui aparece para todo mundo'
     : 'sem armazenamento no servidor: fica salvo só neste navegador';
-  if(!PROX || !PROX.opp){
+
+  const lista = emOrdem(PROX);
+  const lab = $('#proxLab');
+  if(lab) lab.textContent = lista.length > 1 ? 'Próximos jogos' : 'Próximo jogo';
+
+  if(!lista.length){
     vista.innerHTML = '<span class="vazio">Nenhuma partida marcada. Clique em Editar para agendar.</span>';
     cd.hidden = true;
+    if(fila){ fila.hidden = true; fila.innerHTML = ''; }
     return;
   }
-  const quando = PROX.data ? new Date(PROX.data + 'T' + (PROX.hora || '21:00')) : null;
-  const fmt = quando
-    ? quando.toLocaleDateString('pt-BR',{weekday:'long', day:'2-digit', month:'long'})
-      + (PROX.hora ? ' · ' + PROX.hora : '')
-    : 'sem data marcada';
-  vista.innerHTML = 'Bloco 7 <span style="color:var(--ink3)">x</span> ' + esc(PROX.opp)
-    + '<span class="quando">' + esc(fmt) + (PROX.obs ? ' · ' + esc(PROX.obs) : '')
+
+  const p = lista[0];
+  vista.innerHTML = 'Bloco 7 <span style="color:var(--ink3)">x</span> ' + esc(p.opp)
+    + '<span class="quando">' + esc(dataLonga(p)) + (p.obs ? ' · ' + esc(p.obs) : '')
     + '</span>';
 
-  if(!quando || isNaN(quando)){ cd.hidden = true; return; }
+  // os outros jogos marcados viram fichinhas embaixo
+  if(fila){
+    const resto = lista.slice(1);
+    fila.hidden = !resto.length;
+    fila.innerHTML = resto.map(j =>
+      '<span class="item"><b>' + esc(j.opp) + '</b><span>' + esc(dataCurta(j))
+      + (j.obs ? ' · ' + esc(j.obs) : '') + '</span></span>').join('');
+  }
+
+  const quando = quandoDe(p);
+  if(!quando){ cd.hidden = true; return; }
   cd.hidden = false;
   const agora = new Date();
   const dias = Math.ceil((quando - agora) / 86400000);
@@ -4963,28 +5069,63 @@ function renderProximo(){
     cd.innerHTML = '<b>'+Math.max(1,horas)+'</b><span>hora'+(horas===1?'':'s')+'</span>'; }
   else { cd.innerHTML = '<b>'+dias+'</b><span>dia'+(dias===1?'':'s')+'</span>'; }
 }
+
+function montaSlots(){
+  const alvo = $('#proxSlots');
+  if(!alvo) return;
+  const lista = emOrdem(PROX);
+  alvo.innerHTML = Array.from({length: MAX_JOGOS}, (_, i) => {
+    const j = lista[i] || {};
+    return '<div class="prox-slot">'
+      + '<div class="cab"><b>Jogo '+(i+1)+'</b>'
+      + '<button class="btn" type="button" data-limpa="'+i+'">Limpar</button></div>'
+      + '<div class="fgrid">'
+      + '<div class="fld"><label for="pxOpp'+i+'">Adversário</label>'
+      +   '<input id="pxOpp'+i+'" type="text" placeholder="Nome do time" value="'+esc(j.opp||'')+'"></div>'
+      + '<div class="fld"><label for="pxData'+i+'">Data</label>'
+      +   '<input id="pxData'+i+'" type="date" value="'+esc(j.data||'')+'"></div>'
+      + '<div class="fld"><label for="pxHora'+i+'">Horário</label>'
+      +   '<input id="pxHora'+i+'" type="time" value="'+esc(j.hora||'')+'"></div>'
+      + '<div class="fld"><label for="pxObs'+i+'">Observação</label>'
+      +   '<input id="pxObs'+i+'" type="text" placeholder="amistoso, campeonato…" value="'+esc(j.obs||'')+'"></div>'
+      + '</div></div>';
+  }).join('');
+  alvo.querySelectorAll('[data-limpa]').forEach(b=>{
+    b.onclick = ()=>{
+      const i = b.dataset.limpa;
+      ['pxOpp','pxData','pxHora','pxObs'].forEach(k=>{ const el=$('#'+k+i); if(el) el.value=''; });
+      $('#pxOpp'+i).focus();
+    };
+  });
+}
+function leSlots(){
+  const out = [];
+  for(let i=0;i<MAX_JOGOS;i++){
+    const opp = ($('#pxOpp'+i)?.value || '').trim();
+    if(!opp) continue;
+    out.push({ opp, data:$('#pxData'+i).value, hora:$('#pxHora'+i).value,
+               obs:($('#pxObs'+i).value||'').trim() });
+  }
+  return out;
+}
 function abreFormProx(abrir){
   $('#formProximo').hidden = !abrir;
   $('#btnEditProxTxt').textContent = abrir ? 'Fechar' : 'Editar';
-  if(abrir){
-    $('#pxOpp').value  = PROX?.opp  || '';
-    $('#pxData').value = PROX?.data || '';
-    $('#pxHora').value = PROX?.hora || '';
-    $('#pxObs').value  = PROX?.obs  || '';
-    $('#pxOpp').focus();
-  }
+  if(abrir){ montaSlots(); $('#pxOpp0').focus(); }
 }
 $('#btnEditProx').onclick = ()=>abreFormProx($('#formProximo').hidden);
 $('#btnSalvaProx').onclick = async ()=>{
-  const opp = $('#pxOpp').value.trim();
-  if(!opp){ toast('Escreva o nome do adversário.','err'); return; }
-  const onde = await salvaProximo({ opp, data:$('#pxData').value, hora:$('#pxHora').value,
-                                    obs:$('#pxObs').value.trim() });
+  const lista = leSlots();
+  const onde = await salvaProximo(lista);
   abreFormProx(false); renderProximo();
-  toast(onde==='todos' ? 'Próximo jogo salvo para todo mundo.' : 'Salvo neste navegador.', 'ok');
+  const quantos = PROX.length;
+  const msg = quantos
+    ? quantos + ' jogo' + (quantos>1?'s':'') + ' no calendário'
+    : 'Calendário vazio';
+  toast(msg + (onde==='todos' ? ' — vale para todo mundo.' : ' — só neste navegador.'), 'ok');
 };
 $('#btnLimpaProx').onclick = async ()=>{
-  const onde = await salvaProximo(null);
+  const onde = await salvaProximo([]);
   abreFormProx(false); renderProximo();
   toast(onde==='todos' ? 'Calendário limpo para todos.' : 'Calendário limpo neste navegador.');
 };
@@ -5015,6 +5156,8 @@ carregaProximo();
 carregaJogadas();
 carregaEstado().then(ok=>{
   if(ok){ picked=null; curMatch=null; renderAll(); }
+  // se o de-para consertou algo do servidor, devolve corrigido pra todo mundo
+  if(ok && PRECISA_REPUBLICAR){ PRECISA_REPUBLICAR = false; salvaEstado().catch(()=>{}); }
   const av = $('#avisoSync');
   if(av) av.textContent = ok
     ? 'O que você atualizar aqui vale para todo o time.'
