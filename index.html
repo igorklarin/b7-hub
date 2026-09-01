@@ -544,6 +544,13 @@ th[data-tip]{cursor:help}
 .prox-slot .cab{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px}
 .prox-slot .cab b{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink3)}
 .prox-slot .cab button{font-size:11.5px; padding:4px 9px}
+/* no celular o nome do adversario ganha a linha inteira e a contagem desce */
+@media (max-width:560px){
+  .proximo{gap:12px}
+  .prox-info{flex-basis:100%}
+  .prox-fila{padding-top:11px}
+  .prox-fila .item{width:100%}
+}
 .passos{display:grid; gap:14px}
 .passo{display:flex; gap:14px; align-items:flex-start; padding:14px 16px; border-radius:var(--r-sm);
   background:var(--surf2); border:1px solid var(--line)}
@@ -4953,9 +4960,9 @@ document.addEventListener('keydown', e=>{
   }
 });
 
-/* ============ calendário (até 3 jogos) ============ */
+/* ============ calendário (até 5 jogos) ============ */
 const PROX_KEY = 'bloco7:proximo:v1';
-const MAX_JOGOS = 3;
+const MAX_JOGOS = 5;
 let PROX = [], PROX_COMPARTILHADO = false;
 
 // aceita tanto o formato antigo (um objeto só) quanto o novo (lista)

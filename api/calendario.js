@@ -1,4 +1,4 @@
-// Guarda o calendario do time (ate 3 jogos marcados) num arquivo unico,
+// Guarda o calendario do time (ate 5 jogos marcados) num arquivo unico,
 // para que a edicao de um valha para todo mundo que abrir o site.
 //
 // Importante: importamos o pacote inteiro em vez de nomes soltos. Se uma funcao
@@ -7,7 +7,7 @@
 import * as blob from '@vercel/blob';
 
 const ARQUIVO = 'calendario.json';
-const MAX_JOGOS = 3;
+const MAX_JOGOS = 5;
 
 // aceita o formato antigo (um jogo solto) e o novo (lista), sempre devolve lista
 function comoLista(v) {
