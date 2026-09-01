@@ -2949,19 +2949,9 @@ const SETOR_NOME = {GOL:'Goleiro', DEF:'Defesa', MEI:'Meio', ATA:'Ataque'};
 const setorDePos = p => SETOR[p] || null;
 const setorGrupo = s => s==='ATA' ? 'Ataque' : s==='MEI' ? 'Meio' : 'Defesa';
 
-/* o que mostrar como posição naquela partida:
-   se o setor da EA bate com a posição cadastrada, mostra a cadastrada
-   (mais específica: ZAG em vez de DEF); se não bate, procura entre as
-   secundárias; se nada bate, mostra o setor mesmo. */
-function posNaPartida(p){
-  if(p.gpos) return p.gpos;                       // partida digitada à mão
-  const r = DATA.roster[p.p] || {};
-  if(!p.setor) return r.pos || '—';
-  if(setorDePos(r.pos) === p.setor) return r.pos;
-  const alt = String(r.pos2||'').split('/').map(x=>x.trim()).filter(Boolean);
-  const bate = alt.find(x => setorDePos(x) === p.setor);
-  return bate || SETOR_NOME[p.setor] || p.setor;
-}
+/* A tabela de cada partida segue mostrando a posição cadastrada no elenco.
+   O setor que vem da EA (p.setor) é usado só para classificar o jogador
+   nas estatísticas — quem é defensor, quem é meia, quem é atacante. */
 /* ordem de campo: goleiro, defesa, meio, ataque — e não alfabética */
 const ORDEM_POS = {GOL:0, ZAG:1, ZGE:1, ZGD:1, LD:2, LE:3, VOL:4, MC:5, MCD:5, MCE:5, MEI:6, PD:7, PE:8, ATA:9, SA:9, PL:9};
 const posIndice = p => ORDEM_POS[p] ?? 99;
@@ -3555,7 +3545,7 @@ function renderMatchDetail(m){
     const valor = (p, k) => {
       const r = DATA.roster[p.p] || {};
       if(k==='p')    return p.p;
-      if(k==='pos')  return posNaPartida(p);
+      if(k==='pos')  return p.gpos || r.pos || '';
       if(k==='pacc') return p.pa ? p.pm/p.pa*100 : null;
       return p[k] ?? null;
     };
@@ -3579,9 +3569,7 @@ function renderMatchDetail(m){
           const r = DATA.roster[p.p]||{};
           return '<tr class="clickable" data-p="'+esc(p.p)+'"><td><div class="pname">'+avatar(p.p)
             +'<div><div class="n">'+esc(p.p)+'</div>'+(r.gt?'<div class="g">'+esc(r.gt)+'</div>':'')+'</div></div></td>'
-            +'<td style="text-align:left"><span class="pos"'
-              +(p.setor?' title="posição que a EA registrou nesta partida"':'')
-              +'>'+esc(posNaPartida(p))+'</span></td>'
+            +'<td style="text-align:left"><span class="pos">'+esc(p.gpos||r.pos||'—')+'</span></td>'
             +'<td><span class="rate '+tier(p.rating)+'">'+(p.rating!=null?n1(p.rating).replace('.',','):'—')+'</span>'
               +(p.mom?' <span style="color:var(--accent)" title="MOTM — craque da partida">★</span>':'')+'</td>'
             +'<td>'+(p.g||'<span class="muted">0</span>')+'</td>'
