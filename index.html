@@ -1207,7 +1207,7 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
   "VtR1": {
    "gt": "lVTr1l",
    "pos": "VOL",
-   "pos2": "LD",
+   "pos2": "MC/LD",
    "alias": [
     "VTr1",
     "Vtr",
@@ -1229,7 +1229,7 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
   "Pedroca": {
    "gt": "xLecOx",
    "pos": "ZAG",
-   "pos2": "",
+   "pos2": "LD/LE/VOL",
    "alias": [
     "J. Vicente"
    ],
@@ -2934,6 +2934,34 @@ const GRUPO = {ATA:'Ataque',PE:'Ataque',PD:'Ataque',SA:'Ataque',PL:'Ataque',
   MC:'Meio',MEI:'Meio',VOL:'Meio',MCE:'Meio',MCD:'Meio',MD:'Meio',ME:'Meio',
   LE:'Defesa',LD:'Defesa',ZAG:'Defesa',ZGE:'Defesa',ZGD:'Defesa',GOL:'Defesa',GL:'Defesa'};
 const grupo = p => GRUPO[p] || 'Meio';
+
+/* ---------------- setor: o que a EA informa por partida ----------------
+   A API devolve só o setor em que a pessoa jogou naquele jogo
+   (goalkeeper / defender / midfielder / forward), não a posição exata.
+   É esse setor que manda na hora de classificar o jogador — quem é VOL
+   de origem mas joga de lateral quase sempre conta como defensor.        */
+const SETOR = {GOL:'GOL', GL:'GOL',
+  ZAG:'DEF', ZGE:'DEF', ZGD:'DEF', LD:'DEF', LE:'DEF',
+  VOL:'MEI', MC:'MEI', MCD:'MEI', MCE:'MEI', MEI:'MEI', MD:'MEI', ME:'MEI',
+  ATA:'ATA', SA:'ATA', PL:'ATA', PD:'ATA', PE:'ATA'};
+const SETOR_EA = {goalkeeper:'GOL', defender:'DEF', midfielder:'MEI', forward:'ATA'};
+const SETOR_NOME = {GOL:'Goleiro', DEF:'Defesa', MEI:'Meio', ATA:'Ataque'};
+const setorDePos = p => SETOR[p] || null;
+const setorGrupo = s => s==='ATA' ? 'Ataque' : s==='MEI' ? 'Meio' : 'Defesa';
+
+/* o que mostrar como posição naquela partida:
+   se o setor da EA bate com a posição cadastrada, mostra a cadastrada
+   (mais específica: ZAG em vez de DEF); se não bate, procura entre as
+   secundárias; se nada bate, mostra o setor mesmo. */
+function posNaPartida(p){
+  if(p.gpos) return p.gpos;                       // partida digitada à mão
+  const r = DATA.roster[p.p] || {};
+  if(!p.setor) return r.pos || '—';
+  if(setorDePos(r.pos) === p.setor) return r.pos;
+  const alt = String(r.pos2||'').split('/').map(x=>x.trim()).filter(Boolean);
+  const bate = alt.find(x => setorDePos(x) === p.setor);
+  return bate || SETOR_NOME[p.setor] || p.setor;
+}
 /* ordem de campo: goleiro, defesa, meio, ataque — e não alfabética */
 const ORDEM_POS = {GOL:0, ZAG:1, ZGE:1, ZGD:1, LD:2, LE:3, VOL:4, MC:5, MCD:5, MCE:5, MEI:6, PD:7, PE:8, ATA:9, SA:9, PL:9};
 const posIndice = p => ORDEM_POS[p] ?? 99;
@@ -2970,7 +2998,7 @@ function playerStats(escopo){
       const r = DATA.roster[nm] || {};
       map.set(nm, { name:nm, gt:r.gt||'', pos:r.pos||'—', pos2:r.pos2||'', alias:r.alias||[],
         unknown:!!r.unknown, gp:0, rated:[], g:0, a:0, sh:0, pm:0, pa:0, tm:0, ta:0, mom:0, red:0,
-        apiGames:0, gApi:0, timeline:[] });
+        apiGames:0, gApi:0, timeline:[], setores:{} });
     }
     return map.get(nm);
   };
@@ -2978,6 +3006,9 @@ function playerStats(escopo){
     (m.players||[]).forEach(p=>{
       const s = get(p.p);
       s.gp++; s.g += p.g||0; s.a += p.a||0;
+      // cada partida vota no setor: o da EA, ou o da posição digitada à mão
+      const st = p.setor || setorDePos(p.gpos);
+      if(st) s.setores[st] = (s.setores[st]||0) + 1;
       if(p.rating!=null) s.rated.push(p.rating);
       s.timeline.push({ m, r:p.rating??null, g:p.g||0, a:p.a||0 });
       s.mom += p.mom||0;
@@ -3000,6 +3031,11 @@ function playerStats(escopo){
     s.tk = s.tm;
     s.tkacc = s.ta ? s.tm/s.ta*100 : null;
     s.conv = s.sh ? Math.min(100, s.gApi/s.sh*100) : null;
+    // setor de verdade: onde ele mais jogou. sem histórico, vale a posição cadastrada
+    const votos = Object.entries(s.setores).sort((a,b)=>b[1]-a[1] || 0);
+    s.setor = votos.length ? votos[0][0] : setorDePos(s.pos);
+    s.setorJogos = votos.length ? votos[0][1] : 0;
+    s.setorNome = SETOR_NOME[s.setor] || '—';
     return s;
   });
   return out;
@@ -3284,7 +3320,7 @@ function renderGeral(){
 
   // highlights
   const ps = playerStats(escopo).filter(p=>p.gp>0);
-  const DEF = new Set(['ZAG','LD','LE','GOL']);
+
   const desvio = r => {
     if(r.length<2) return null;
     const m = r.reduce((a,b)=>a+b,0)/r.length;
@@ -3304,11 +3340,11 @@ function renderGeral(){
       met:p=>n1(p.avg).replace('.',',')+' de média em '+p.rated.length+' jogo'+(p.rated.length===1?'':'s')+' com nota',
       val:p=>n1(p.avg).replace('.',',') },
     { lab:'Melhor meia', ico:'M12 2v20M2 12h20M12 2a10 10 0 0 1 0 20 10 10 0 0 1 0-20z',
-      filtro:p=>grupo(p.pos)==='Meio' && p.rated.length>=2, ord:(a,b)=>(b.avg||0)-(a.avg||0),
+      filtro:p=>p.setor==='MEI' && p.rated.length>=2, ord:(a,b)=>(b.avg||0)-(a.avg||0),
       met:p=>n1(p.avg).replace('.',',')+' de média · '+p.pg+' participaç'+(p.pg===1?'ão':'ões')+' de gol',
       val:p=>n1(p.avg).replace('.',',') },
     { lab:'Melhor defensor', ico:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
-      filtro:p=>DEF.has(p.pos) && p.rated.length>=2, ord:(a,b)=>(b.avg||0)-(a.avg||0),
+      filtro:p=>(p.setor==='DEF'||p.setor==='GOL') && p.rated.length>=2, ord:(a,b)=>(b.avg||0)-(a.avg||0),
       met:p=>n1(p.avg).replace('.',',')+' de média · '+p.tm+' desarme'+(p.tm===1?'':'s'),
       val:p=>n1(p.avg).replace('.',',') },
     { lab:'Ladrão de bolas', ico:'M6 20v-6M6 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8M18 4v6M18 10a4 4 0 1 1 0 8 4 4 0 0 1 0-8',
@@ -3519,7 +3555,7 @@ function renderMatchDetail(m){
     const valor = (p, k) => {
       const r = DATA.roster[p.p] || {};
       if(k==='p')    return p.p;
-      if(k==='pos')  return p.gpos || r.pos || '';
+      if(k==='pos')  return posNaPartida(p);
       if(k==='pacc') return p.pa ? p.pm/p.pa*100 : null;
       return p[k] ?? null;
     };
@@ -3543,7 +3579,9 @@ function renderMatchDetail(m){
           const r = DATA.roster[p.p]||{};
           return '<tr class="clickable" data-p="'+esc(p.p)+'"><td><div class="pname">'+avatar(p.p)
             +'<div><div class="n">'+esc(p.p)+'</div>'+(r.gt?'<div class="g">'+esc(r.gt)+'</div>':'')+'</div></div></td>'
-            +'<td style="text-align:left"><span class="pos">'+esc(p.gpos||r.pos||'—')+'</span></td>'
+            +'<td style="text-align:left"><span class="pos"'
+              +(p.setor?' title="posição que a EA registrou nesta partida"':'')
+              +'>'+esc(posNaPartida(p))+'</span></td>'
             +'<td><span class="rate '+tier(p.rating)+'">'+(p.rating!=null?n1(p.rating).replace('.',','):'—')+'</span>'
               +(p.mom?' <span style="color:var(--accent)" title="MOTM — craque da partida">★</span>':'')+'</td>'
             +'<td>'+(p.g||'<span class="muted">0</span>')+'</td>'
@@ -3598,7 +3636,7 @@ function renderEvolucao(){
   lineChart();
   const ps = playerStats().filter(p=>p.rated.length>0);
   const byPos = new Map([['Ataque',[]],['Meio',[]],['Defesa',[]]]);
-  ps.forEach(p=>{ byPos.get(grupo(p.pos)).push(...p.rated); });
+  ps.forEach(p=>{ byPos.get(setorGrupo(p.setor)).push(...p.rated); });
   const rows = [...byPos.entries()].filter(([,v])=>v.length)
     .map(([k,v])=>({k, v:v.reduce((a,b)=>a+b,0)/v.length})).sort((a,b)=>b.v-a.v);
   barList($('#barPos'), rows, v=>n1(v).replace('.',','), r=>tierColor(r.v), 10);
@@ -3733,7 +3771,9 @@ function parseEA(json){
       const nm = ix[String(p.playername||'').toLowerCase()] || p.playername;
       return { p:nm, rating:+p.rating||null, g:+p.goals||0, a:+p.assists||0, sh:+p.shots||0,
         pm:+p.passesmade||0, pa:+p.passattempts||0, tm:+p.tacklesmade||0, ta:+p.tackleattempts||0,
-        mom:+p.mom||0, red:+p.redcards||0 };
+        mom:+p.mom||0, red:+p.redcards||0,
+        // setor em que ele jogou NESTA partida, direto da EA
+        setor: SETOR_EA[String(p.pos||'').toLowerCase()] || null };
     });
     // duracao: secondsPlayed e confiavel; realtimegame vem com valores lixo em alguns jogadores
     const secs = Object.values(ps).map(p=>+p.secondsPlayed||0).sort((a,b)=>a-b);
@@ -3927,9 +3967,6 @@ const FORMACOES = {
   '5-3-2':      [['GOL',50,93],['LE',10,68],['ZAG',28,80],['ZAG',50,82],['ZAG',72,80],['LD',90,68],
                  ['MC',30,50],['VOL',50,56],['MC',70,50],['ATA',38,20],['ATA',62,20]],
 };
-const SETOR = {ATA:'Ataque',PE:'Ataque',PD:'Ataque',
-               MC:'Meio',MEI:'Meio',VOL:'Meio',
-               LE:'Defesa',LD:'Defesa',ZAG:'Defesa',GOL:'Defesa'};
 const ESC_KEY = 'bloco7:escalacao:v1';
 
 let ESC = { formacao:'4-2-3-1', slots:[], desenho:[], bola:{x:50,y:50,on:true}, modo:null, sel:null, selJogada:null, alvoApagar:-1 };
