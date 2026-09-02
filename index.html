@@ -3755,7 +3755,11 @@ function parseEA(json){
     const clubs = m.clubs||{}; const me = clubs[CID]; if(!me) return;
     const oppId = Object.keys(clubs).find(k=>k!==CID); const opp = clubs[oppId]||{};
     const ps = (m.players&&m.players[CID])||{};
-    const players = Object.values(ps).map(p=>{
+    // Quem a EA registra com 0 segundos não entrou em campo (aparece com nota 3,00).
+    // Só filtra se alguém jogou de verdade, pra não esvaziar a partida por bug da EA.
+    const listaCrua = Object.values(ps);
+    const alguemJogou = listaCrua.some(p => (+p.secondsPlayed||0) > 0);
+    const players = listaCrua.filter(p => !alguemJogou || (+p.secondsPlayed||0) > 0).map(p=>{
       const nm = ix[String(p.playername||'').toLowerCase()] || p.playername;
       return { p:nm, rating:+p.rating||null, g:+p.goals||0, a:+p.assists||0, sh:+p.shots||0,
         pm:+p.passesmade||0, pa:+p.passattempts||0, tm:+p.tacklesmade||0, ta:+p.tackleattempts||0,
@@ -3764,7 +3768,7 @@ function parseEA(json){
         setor: SETOR_EA[String(p.pos||'').toLowerCase()] || null };
     });
     // duracao: secondsPlayed e confiavel; realtimegame vem com valores lixo em alguns jogadores
-    const secs = Object.values(ps).map(p=>+p.secondsPlayed||0).sort((a,b)=>a-b);
+    const secs = listaCrua.map(p=>+p.secondsPlayed||0).filter(x=>!alguemJogou||x>0).sort((a,b)=>a-b);
     const mediana = secs.length ? secs[Math.floor(secs.length/2)] : 0;
     const totPa = players.reduce((a,b)=>a+b.pa,0);
     const gf = +me.goals||0, ga = +opp.goals||0;
