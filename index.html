@@ -3002,7 +3002,7 @@ function playerStats(escopo){
       if(p.rating!=null) s.rated.push(p.rating);
       s.timeline.push({ m, r:p.rating??null, g:p.g||0, a:p.a||0 });
       s.mom += p.mom||0;
-      if(m.src==='api'){
+      if(m.src==='api' && !m.semStats){
         s.apiGames++; s.gApi+=p.g||0; s.sh+=p.sh||0; s.pm+=p.pm||0; s.pa+=p.pa||0;
         s.tm+=p.tm||0; s.ta+=p.ta||0; s.red+=p.red||0;
       }
@@ -3769,19 +3769,31 @@ function parseEA(json){
     const totPa = players.reduce((a,b)=>a+b.pa,0);
     const gf = +me.goals||0, ga = +opp.goals||0;
     const byDnf = String(me.winnerByDnf||'0')==='1' || String(opp.winnerByDnf||'0')==='1';
-    // lobby refeito: partida curta demais ou sem bola rolando -> fica fora do dashboard
-    if(byDnf || (mediana>0 && mediana<1500) || totPa<30) return;
+    // Lobby refeito: a partida acaba em poucos minutos. É a DURAÇÃO que denuncia.
+    // (O placar de uma partida assim é sempre 0x0 ou 3x0 na marra e ninguém jogou.)
+    const curta = mediana > 0 && mediana < 1500;
+    const semDuracao = mediana === 0;
+    if(byDnf || curta || (semDuracao && totPa < 30)) return;
+    // Partida real em que a EA não gravou as estatísticas: durou o jogo inteiro,
+    // tem nota de todo mundo, mas passe/desarme/finalização vieram zerados.
+    // Ela CONTA (resultado, gols, notas) mas fica de fora das médias por jogo.
+    const semStats = totPa < 30;
     const mm = { id:String(m.matchId), src:'api',
       opp:(opp.details&&opp.details.name)||opp.name||'Adversário',
       gf, ga, ts:+m.timestamp||null, res: gf>ga?'V':(gf===ga?'E':'D'), players };
+    if(semStats) mm.semStats = true;
     if(mm.ts){ const d=new Date(mm.ts*1000);
       mm.date=d.toLocaleDateString('pt-BR');
       mm.time=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+    const notas = [];
     const marcados = players.reduce((s,p)=>s+p.g,0);
     if(marcados < gf){
       const n = gf - marcados;
-      mm.note = n+' gol'+(n>1?'s':'')+' sem dono no registro da EA — normalmente é gol contra do adversário.';
+      notas.push(n+' gol'+(n>1?'s':'')+' sem dono no registro da EA — normalmente é gol contra do adversário.');
     }
+    if(semStats) notas.push('A EA não gravou as estatísticas desta partida: passes, desarmes e '
+      +'finalizações vieram zerados. O resultado e as notas contam; as médias por jogo ignoram este jogo.');
+    if(notas.length) mm.note = notas.join(' ');
     out.push(mm);
   });
   return out;
