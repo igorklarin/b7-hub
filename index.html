@@ -404,6 +404,8 @@ footer.foot{border-top:1px solid var(--line); padding:22px 0 40px; color:var(--i
 .trophy-card h3{font-size:15px;margin:1px 0 3px}.trophy-card p{margin:0;color:var(--ink2);font-size:13px;line-height:1.4}.trophy-card button{margin-left:auto;flex:none}
 .trophy-form{margin-top:16px;padding:15px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surf2)}
 .trophy-form[hidden]{display:none}.trophy-form .fgrid{margin-bottom:10px}
+.match-key{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:7px 12px;margin-top:13px;font-size:12px;color:var(--ink2)}
+.match-key span{display:flex;align-items:center;gap:6px;min-width:0}.match-key b{display:grid;place-items:center;width:19px;height:19px;border-radius:999px;background:var(--surf3);color:var(--ink);font:600 10px "IBM Plex Mono",monospace;flex:none}.match-key em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tip-h{
   position:fixed; z-index:120; pointer-events:none; background:var(--surf); color:var(--ink);
   border:1px solid var(--line2); border-radius:9px; padding:8px 11px; font-size:12.5px;
@@ -932,6 +934,7 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
         <div class="fgrid">
           <div class="fld"><label for="fTrophyType">Tipo</label><select id="fTrophyType"><option value="titulo">Título</option><option value="premio">Prêmio individual</option></select></div>
           <div class="fld"><label for="fTrophyName">Nome</label><input id="fTrophyName" type="text" placeholder="Ex.: Liga Pro Clubs 2026"></div>
+          <div class="fld" id="trophyDateField"><label for="fTrophyDate">Data da conquista</label><input id="fTrophyDate" type="date"></div>
           <div class="fld" id="trophyTitleField" hidden><label for="fTrophyParent">Vincular ao título</label><select id="fTrophyParent"></select></div>
           <div class="fld"><label for="fTrophyDetail">Detalhe</label><input id="fTrophyDetail" type="text" placeholder="Ex.: Klarin · 18 gols"></div>
         </div>
@@ -3131,9 +3134,8 @@ function goalsChart(escopo){
         (side<0?'Marcados: ':'Sofridos: ')+v;
       s.appendChild(r);
     });
-    const nome = m.opp.length>16 ? m.opp.slice(0,15)+'…' : m.opp;
-    const lb = svgEl('text',{x:cx, y:H-36,'text-anchor':'end','font-size':10.5,fill:cssv('--ink2'),transform:'rotate(-35 '+cx+' '+(H-36)+')'});
-    lb.textContent = nome; s.appendChild(lb);
+    const lb = svgEl('text',{x:cx, y:H-31,'text-anchor':'middle','font-size':10,fill:cssv('--ink2'),'font-family':'IBM Plex Mono, monospace','font-weight':600});
+    lb.textContent = '#'+(i+1); s.appendChild(lb);
     const sc = svgEl('text',{x:cx, y:H-12,'text-anchor':'middle','font-size':11,fill:cssv('--ink3'),
       'font-family':'IBM Plex Mono, monospace'});
     sc.textContent = m.gf+'–'+m.ga; s.appendChild(sc);
@@ -3143,6 +3145,9 @@ function goalsChart(escopo){
   lg.innerHTML = '<span style="display:inline-flex;align-items:center;gap:7px"><i class="sw" style="background:'+cssv('--wine2')+'"></i>Marcados</span>'
     + '<span style="display:inline-flex;align-items:center;gap:7px"><i class="sw" style="background:'+cssv('--line2')+'"></i>Sofridos</span>';
   box.appendChild(lg);
+  const chave=el('div','match-key');
+  chave.innerHTML=ms.map((m,i)=>'<span title="'+esc(m.opp)+' · '+m.gf+'–'+m.ga+'"><b>#'+(i+1)+'</b><em>'+esc(m.opp)+' · '+m.gf+'–'+m.ga+'</em></span>').join('');
+  box.appendChild(chave);
 }
 
 /* --------- line chart: rating per match --------- */
@@ -3666,11 +3671,12 @@ function renderTrofeus(){
   itens.forEach(t=>{
     const titulo=t.type==='premio'?'Prêmio individual':'Título';
     const tituloVinculado=t.type==='premio' && t.parentId ? (itens.find(x=>x.id===t.parentId)||{}).name : '';
+    const dataTitulo=t.type==='titulo' && t.date ? t.date.split('-').reverse().join('/') : '';
     const icone=t.type==='premio'
       ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m12 2 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 8.6l6.2-.9z"/></svg>'
       : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.7V17c0 .6-.1 1.1-.5 1.5L8 20h8l-1.5-1.5c-.4-.4-.5-.9-.5-1.5v-2.3"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>';
     const card=el('div','trophy-card');
-    card.innerHTML='<div class="trophy-icon">'+icone+'</div><div style="min-width:0;flex:1"><div class="lab">'+titulo+'</div><h3>'+esc(t.name)+'</h3>'+(tituloVinculado?'<p>🏆 '+esc(tituloVinculado)+'</p>':'')+(t.detail?'<p>'+esc(t.detail)+'</p>':'')+'</div>';
+    card.innerHTML='<div class="trophy-icon">'+icone+'</div><div style="min-width:0;flex:1"><div class="lab">'+titulo+'</div><h3>'+esc(t.name)+'</h3>'+(dataTitulo?'<p>🏆 '+dataTitulo+'</p>':'')+(tituloVinculado?'<p>🏆 '+esc(tituloVinculado)+'</p>':'')+(t.detail?'<p>'+esc(t.detail)+'</p>':'')+'</div>';
     const acoes=el('div'); acoes.style.cssText='display:flex;flex-direction:column;gap:6px';
     const edit=el('button','btn','Editar'); edit.style.minHeight='34px'; edit.style.padding='6px 9px';
     edit.onclick=()=>editarTrofeu(t.id);
@@ -3689,10 +3695,10 @@ function adicionarTrofeu(type){
 }
 function removerTrofeu(id){
   const t=(DATA.trophies||[]).find(x=>x.id===id); if(!t) return;
-  if(!confirm('Remover a conquista “'+t.name+'”?')) return;
-  DATA.trophies=DATA.trophies.filter(x=>x.id!==id);
+  const vinculados=t.type==='titulo' ? DATA.trophies.filter(x=>x.parentId===id).length : 0;
+  DATA.trophies=DATA.trophies.filter(x=>x.id!==id && x.parentId!==id);
   DATA.generated=new Date().toISOString(); saveExtra(); renderTrofeus(); publica();
-  toast('Conquista removida.','ok');
+  toast(vinculados?'Título e '+vinculados+' prêmio(s) vinculado(s) removidos.':'Conquista removida.','ok');
 }
 $('#btnAddTitulo').onclick=()=>adicionarTrofeu('titulo');
 $('#btnAddPremio').onclick=()=>adicionarTrofeu('premio');
@@ -3704,25 +3710,26 @@ function atualizaTitulosDoForm(){
   sel.innerHTML='<option value="">Selecione o título</option>'+titulos.map(t=>'<option value="'+esc(t.id)+'">'+esc(t.name)+'</option>').join('');
   if([...sel.options].some(o=>o.value===atual)) sel.value=atual;
   $('#trophyTitleField').hidden=tipo!=='premio';
+  $('#trophyDateField').hidden=tipo!=='titulo';
 }
 function abrirFormTrofeu(t){
   editandoTrofeuId=t.id||null;
   $('#trophyForm').hidden=false;
   $('#trophyFormTitle').textContent=t.id?'Editar conquista':(t.type==='premio'?'Novo prêmio individual':'Novo título');
-  $('#fTrophyType').value=t.type||'titulo'; $('#fTrophyName').value=t.name||''; $('#fTrophyDetail').value=t.detail||'';
+  $('#fTrophyType').value=t.type||'titulo'; $('#fTrophyName').value=t.name||''; $('#fTrophyDetail').value=t.detail||''; $('#fTrophyDate').value=t.date||'';
   $('#fTrophyParent').value=t.parentId||''; atualizaTitulosDoForm(); $('#fTrophyParent').value=t.parentId||'';
   $('#trophyMsg').textContent=''; $('#trophyForm').scrollIntoView({behavior:'smooth',block:'nearest'}); $('#fTrophyName').focus();
 }
 $('#fTrophyType').onchange=atualizaTitulosDoForm;
 $('#btnCancelTrophy').onclick=()=>{ $('#trophyForm').hidden=true; editandoTrofeuId=null; };
 $('#btnSaveTrophy').onclick=()=>{
-  const name=$('#fTrophyName').value.trim(), type=$('#fTrophyType').value, parentId=$('#fTrophyParent').value;
+  const name=$('#fTrophyName').value.trim(), type=$('#fTrophyType').value, parentId=$('#fTrophyParent').value, date=$('#fTrophyDate').value;
   const msg=$('#trophyMsg');
   if(!name){ msg.textContent='Escreva o nome da conquista.'; msg.style.color='var(--bad)'; return; }
   if(type==='premio' && !parentId){ msg.textContent='Vincule o prêmio a um título.'; msg.style.color='var(--bad)'; return; }
   if(!Array.isArray(DATA.trophies)) DATA.trophies=[];
   const t=editandoTrofeuId ? DATA.trophies.find(x=>x.id===editandoTrofeuId) : {id:'trofeu-'+Date.now()};
-  Object.assign(t,{type,name,detail:$('#fTrophyDetail').value.trim(),parentId:type==='premio'?parentId:null});
+  Object.assign(t,{type,name,detail:$('#fTrophyDetail').value.trim(),parentId:type==='premio'?parentId:null,date:type==='titulo'?date:null});
   if(!editandoTrofeuId) DATA.trophies.push(t);
   DATA.generated=new Date().toISOString(); saveExtra(); renderTrofeus(); publica();
   $('#trophyForm').hidden=true; editandoTrofeuId=null; toast('Conquista salva.','ok');
@@ -4830,6 +4837,7 @@ $('#btnSaveMatch').onclick = ()=>{
   DATA.generated = new Date().toISOString();
   saveExtra(); picked=null; curMatch=jogo.id; renderAll();
   entry.hidden=true; fileIn.value=''; editandoId=null;
+  selectTab('partidas');
   toast((antiga?'Partida atualizada: ':'Partida adicionada: ')+'Bloco 7 '+gf+'x'+ga+' '+opp, 'ok');
   publica();
 };
