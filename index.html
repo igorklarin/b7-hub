@@ -403,7 +403,7 @@ footer.foot{border-top:1px solid var(--line); padding:22px 0 40px; color:var(--i
 .trophy-icon{width:38px;height:38px;display:grid;place-items:center;flex:none;border-radius:10px;background:var(--accent-soft);color:var(--accent)}
 .trophy-card h3{font-size:15px;margin:1px 0 3px}.trophy-card p{margin:0;color:var(--ink2);font-size:13px;line-height:1.4}.trophy-card button{margin-left:auto;flex:none}
 .trophy-form{margin-top:16px;padding:15px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surf2)}
-.trophy-form[hidden]{display:none}.trophy-form .fgrid{margin-bottom:10px}
+.trophy-form[hidden],.fld[hidden]{display:none}.trophy-form .fgrid{margin-bottom:10px}
 .match-key{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:7px 12px;margin-top:13px;font-size:12px;color:var(--ink2)}
 .match-key span{display:flex;align-items:center;gap:6px;min-width:0}.match-key b{display:grid;place-items:center;width:19px;height:19px;border-radius:999px;background:var(--surf3);color:var(--ink);font:600 10px "IBM Plex Mono",monospace;flex:none}.match-key em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tip-h{
@@ -3107,7 +3107,7 @@ function goalsChart(escopo){
   const box = $('#goalsChart'); box.innerHTML='';
   const ms = escopo || counted();
   if(!ms.length){ box.innerHTML='<p class="muted">Sem partidas.</p>'; return; }
-  const W = Math.max(760, ms.length*78), H=260, PL=34, PR=10, PT=14, PB=72;
+  const W = Math.max(760, ms.length*78), H=250, PL=34, PR=10, PT=14, PB=60;
   const iw = W-PL-PR, ih = H-PT-PB;
   const maxV = Math.max(4, ...ms.map(m=>Math.max(m.gf,m.ga)));
   const s = svgEl('svg',{viewBox:`0 0 ${W} ${H}`, role:'img', width:W,
@@ -3134,8 +3134,9 @@ function goalsChart(escopo){
         (side<0?'Marcados: ':'Sofridos: ')+v;
       s.appendChild(r);
     });
-    const lb = svgEl('text',{x:cx, y:H-31,'text-anchor':'middle','font-size':10,fill:cssv('--ink2'),'font-family':'IBM Plex Mono, monospace','font-weight':600});
-    lb.textContent = '#'+(i+1); s.appendChild(lb);
+    const nome = m.opp.length>10 ? m.opp.slice(0,9)+'…' : m.opp;
+    const lb = svgEl('text',{x:cx, y:H-30,'text-anchor':'middle','font-size':9,fill:cssv('--ink2')});
+    lb.textContent = nome; s.appendChild(lb);
     const sc = svgEl('text',{x:cx, y:H-12,'text-anchor':'middle','font-size':11,fill:cssv('--ink3'),
       'font-family':'IBM Plex Mono, monospace'});
     sc.textContent = m.gf+'–'+m.ga; s.appendChild(sc);
@@ -3145,9 +3146,6 @@ function goalsChart(escopo){
   lg.innerHTML = '<span style="display:inline-flex;align-items:center;gap:7px"><i class="sw" style="background:'+cssv('--wine2')+'"></i>Marcados</span>'
     + '<span style="display:inline-flex;align-items:center;gap:7px"><i class="sw" style="background:'+cssv('--line2')+'"></i>Sofridos</span>';
   box.appendChild(lg);
-  const chave=el('div','match-key');
-  chave.innerHTML=ms.map((m,i)=>'<span title="'+esc(m.opp)+' · '+m.gf+'–'+m.ga+'"><b>#'+(i+1)+'</b><em>'+esc(m.opp)+' · '+m.gf+'–'+m.ga+'</em></span>').join('');
-  box.appendChild(chave);
 }
 
 /* --------- line chart: rating per match --------- */
