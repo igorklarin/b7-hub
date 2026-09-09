@@ -385,7 +385,7 @@ footer.foot{border-top:1px solid var(--line); padding:22px 0 40px; color:var(--i
   font-variant-numeric:tabular-nums;
 }
 .fld input:focus, .fld select:focus{border-color:var(--accent); outline:none}
-.prow{display:grid; grid-template-columns:1.5fr 70px 56px 56px 34px; gap:8px; align-items:center; margin-bottom:7px}
+.prow{display:grid; grid-template-columns:1.45fr 58px 48px 48px 48px 62px 62px 62px 62px 34px; gap:6px; align-items:center; margin-bottom:7px}
 .prow input, .prow select{
   background:var(--surf2); border:1px solid var(--line); border-radius:7px; color:var(--ink);
   padding:8px; font:inherit; font-size:13px; min-height:38px; width:100%; font-variant-numeric:tabular-nums;
@@ -393,8 +393,15 @@ footer.foot{border-top:1px solid var(--line); padding:22px 0 40px; color:var(--i
 .prow .rm{border:1px solid var(--line); background:var(--surf); border-radius:7px; cursor:pointer;
   min-height:38px; display:grid; place-items:center; color:var(--ink3)}
 .prow .rm:hover{color:var(--bad); border-color:var(--bad)}
-.prowhead{display:grid; grid-template-columns:1.5fr 70px 56px 56px 34px; gap:8px; margin-bottom:6px;
+.prowhead{display:grid; grid-template-columns:1.45fr 58px 48px 48px 48px 62px 62px 62px 62px 34px; gap:6px; margin-bottom:6px;
   font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink3); font-weight:700}
+@media(max-width:850px){.prow,.prowhead{min-width:715px}.prows-wrap{overflow-x:auto;padding-bottom:4px}}
+
+/* ---------- troféus ---------- */
+.trophy-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:14px;margin-top:16px}
+.trophy-card{display:flex;gap:12px;align-items:flex-start;background:var(--surf2);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px}
+.trophy-icon{width:38px;height:38px;display:grid;place-items:center;flex:none;border-radius:10px;background:var(--accent-soft);color:var(--accent)}
+.trophy-card h3{font-size:15px;margin:1px 0 3px}.trophy-card p{margin:0;color:var(--ink2);font-size:13px;line-height:1.4}.trophy-card button{margin-left:auto;flex:none}
 .tip-h{
   position:fixed; z-index:120; pointer-events:none; background:var(--surf); color:var(--ink);
   border:1px solid var(--line2); border-radius:9px; padding:8px 11px; font-size:12.5px;
@@ -679,7 +686,7 @@ th[data-tip]{cursor:help}
     </section>
 
     <section>
-      <div class="sechead"><h2>Sequência</h2><span class="hint">Da partida mais recente para a mais antiga · clique para abrir</span></div>
+      <div class="sechead"><h2>Sequência</h2><span class="hint">Últimas 10 partidas, da mais recente para a mais antiga · clique para abrir</span></div>
       <div class="card pad"><div class="formstrip" id="formStrip"></div></div>
     </section>
 
@@ -721,7 +728,7 @@ th[data-tip]{cursor:help}
 
     <section>
       <div class="card pad">
-        <div class="sechead"><h2>Gols por partida</h2><span class="hint">Marcados x sofridos</span></div>
+        <div class="sechead"><h2>Gols por partida</h2><span class="hint">Últimas 10 · marcados x sofridos</span></div>
         <div class="chartbox" id="goalsChart"></div>
       </div>
     </section>
@@ -890,7 +897,7 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
   <div class="panel" id="p-evolucao" role="tabpanel" aria-labelledby="tab-evolucao" hidden>
     <section>
       <div class="card pad">
-        <div class="sechead"><h2>Nota por partida</h2><span class="hint">Escolha até 6 jogadores na legenda</span></div>
+        <div class="sechead"><h2>Nota por partida</h2><span class="hint">Últimas 10 · escolha até 6 jogadores; jogos sem atuação não interrompem a linha</span></div>
         <div class="chartbox" id="lineChart"></div>
         <div class="legend" id="lineLegend"></div>
       </div>
@@ -911,16 +918,14 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
 
   <!-- ============ TROFÉUS ============ -->
   <div class="panel" id="p-trofeus" role="tabpanel" aria-labelledby="tab-trofeus" hidden>
-    <div class="card pad emBreve">
-      <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
-        <path d="M4 22h16"/><path d="M10 14.7V17c0 .6-.1 1.1-.5 1.5L8 20h8l-1.5-1.5c-.4-.4-.5-.9-.5-1.5v-2.3"/>
-        <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
-      </svg>
-      <h2>Troféus</h2>
-      <p>Em breve. A ideia é guardar aqui as conquistas do Bloco 7 — títulos, sequências
-        invictas, recordes individuais e marcas do elenco.</p>
+    <div class="card pad">
+      <div class="sechead"><h2>Troféus</h2><span class="hint">Conquistas do Bloco 7</span></div>
+      <p style="margin:0;color:var(--ink2);font-size:14px">Registre títulos do time e prêmios individuais, como artilharia e garçom.</p>
+      <div class="toolbar" style="margin-top:14px">
+        <button class="btn primary" id="btnAddTitulo" type="button">🏆 Adicionar título</button>
+        <button class="btn" id="btnAddPremio" type="button">★ Adicionar prêmio individual</button>
+      </div>
+      <div class="trophy-grid" id="trophyGrid"></div>
     </div>
   </div>
 
@@ -1037,8 +1042,9 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
             </div>
             <label class="toggle" style="margin-bottom:16px"><input type="checkbox" id="fPens"> Empatou e venceu nos pênaltis</label>
 
-            <div class="prowhead"><span>Jogador</span><span>Nota</span><span>Gols</span><span>Assist</span><span></span></div>
-            <div id="prows"></div>
+            <p style="font-size:12.5px;color:var(--ink2);margin:0 0 10px">Em partidas da API, as estatísticas abaixo vêm preenchidas e podem ser corrigidas sem se perder ao salvar.</p>
+            <div class="prows-wrap"><div class="prowhead"><span>Jogador</span><span>Nota</span><span>Gols</span><span>Assist</span><span>Fin.</span><span>Passes ✓</span><span>Passes ↗</span><span>Desarmes ✓</span><span>Desarmes ↗</span><span></span></div>
+            <div id="prows"></div></div>
             <div class="toolbar" style="margin-top:10px">
               <button class="btn" id="btnAddRow" type="button">+ Jogador</button>
             </div>
@@ -2965,6 +2971,8 @@ function partidasGeral(){
   const ms = DATA.matches;
   return recorte ? ms.slice(-recorte) : ms;
 }
+/* Painéis visuais sempre usam uma janela curta, para manter rótulos legíveis. */
+function ultimasPartidas(n=10){ return DATA.matches.slice(-n); }
 
 function teamStats(escopo){
   const ms = escopo || counted();
@@ -3128,7 +3136,7 @@ function goalsChart(escopo){
 /* --------- line chart: rating per match --------- */
 function lineChart(){
   const box = $('#lineChart'); box.innerHTML='';
-  const ms = counted().filter(m=>!m.noratings);
+  const ms = ultimasPartidas().filter(m=>!m.noratings);
   const stats = playerStats().filter(p=>p.rated.length>0);
   if(picked === null){
     picked = stats.slice().sort((a,b)=>b.rated.length-a.rated.length || b.avg-a.avg).slice(0,4).map(p=>p.name);
@@ -3165,8 +3173,9 @@ function lineChart(){
       const t = p.timeline.find(t=>t.m.id===m.id);
       return (t && t.r!=null) ? {x:x(i), y:y(t.r), v:t.r} : null;
     });
+    // A ausência em uma partida não cria um "buraco": liga as atuações registradas.
     let d='', open=false;
-    pts.forEach(pt=>{ if(!pt){open=false;return;} d += (open?' L ':' M ')+pt.x+' '+pt.y; open=true; });
+    pts.forEach(pt=>{ if(!pt) return; d += (open?' L ':' M ')+pt.x+' '+pt.y; open=true; });
     s.appendChild(svgEl('path',{d, fill:'none', stroke:col,'stroke-width':2,
       'stroke-linejoin':'round','stroke-linecap':'round'}));
     pts.forEach(pt=>{ if(!pt) return;
@@ -3287,6 +3296,7 @@ function sparkline(tl){
 /* ---------------- renderers ---------------- */
 function renderGeral(){
   const escopo = partidasGeral();
+  const visual = ultimasPartidas();
   const t = teamStats(escopo);
   ring(t.apr);
   $('#wV').textContent=t.V; $('#wE').textContent=t.E; $('#wD').textContent=t.D;
@@ -3297,7 +3307,7 @@ function renderGeral(){
 
   // form strip
   const fs = $('#formStrip'); fs.innerHTML='';
-  escopo.slice().reverse().forEach(m=>{
+  visual.slice().reverse().forEach(m=>{
     const b = el('button','fbox '+m.res+(m.pens?' pen':''));
     b.textContent = m.res;
     b.title = 'Bloco 7 '+m.gf+'x'+m.ga+' '+m.opp
@@ -3387,7 +3397,7 @@ function renderGeral(){
     requestAnimationFrame(()=>{ fl.style.width = Math.max(3, r.v/maxReg*100)+'%'; });
   });
 
-  goalsChart(escopo);
+  goalsChart(visual);
 }
 
 const COLS = [
@@ -3515,6 +3525,13 @@ function renderMatchDetail(m){
   bEdit.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg> Editar esta partida';
   bEdit.onclick = ()=>editarPartida(m.id);
   acoes.appendChild(bEdit);
+  if(m.src==='api'){
+    const bSync = el('button','btn');
+    bSync.innerHTML = '↻ Ressincronizar com API';
+    bSync.title = 'Substitui esta partida pelos dados mais recentes disponíveis na API da EA';
+    bSync.onclick = ()=>ressincronizarPartida(m.id, bSync);
+    acoes.appendChild(bSync);
+  }
   const dica = el('span','muted');
   dica.style.fontSize='12.5px';
   dica.textContent = 'corrige nota, gol ou assistência sem precisar de mim';
@@ -3630,6 +3647,60 @@ function renderEvolucao(){
   barList($('#barPos'), rows, v=>n1(v).replace('.',','), r=>tierColor(r.v), 10);
   scatterChart();
 }
+
+function renderTrofeus(){
+  const grid=$('#trophyGrid'); if(!grid) return;
+  const itens=DATA.trophies||[]; grid.innerHTML='';
+  if(!itens.length){
+    grid.innerHTML='<p class="muted" style="margin:4px 0">Nenhuma conquista registrada ainda. Use os botões acima para adicionar a primeira.</p>';
+    return;
+  }
+  itens.forEach(t=>{
+    const titulo=t.type==='premio'?'Prêmio individual':'Título';
+    const icone=t.type==='premio'
+      ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m12 2 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 8.6l6.2-.9z"/></svg>'
+      : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.7V17c0 .6-.1 1.1-.5 1.5L8 20h8l-1.5-1.5c-.4-.4-.5-.9-.5-1.5v-2.3"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>';
+    const card=el('div','trophy-card');
+    card.innerHTML='<div class="trophy-icon">'+icone+'</div><div style="min-width:0;flex:1"><div class="lab">'+titulo+'</div><h3>'+esc(t.name)+'</h3>'+(t.detail?'<p>'+esc(t.detail)+'</p>':'')+'</div>';
+    const acoes=el('div'); acoes.style.cssText='display:flex;flex-direction:column;gap:6px';
+    const edit=el('button','btn','Editar'); edit.style.minHeight='34px'; edit.style.padding='6px 9px';
+    edit.onclick=()=>editarTrofeu(t.id);
+    const apagar=el('button','btn','×'); apagar.title='Remover conquista'; apagar.setAttribute('aria-label','Remover '+t.name);
+    apagar.style.cssText='min-height:30px;padding:3px 9px;color:var(--bad);border-color:var(--bad)';
+    apagar.onclick=()=>removerTrofeu(t.id);
+    acoes.append(edit,apagar); card.appendChild(acoes); grid.appendChild(card);
+  });
+}
+function editarTrofeu(id){
+  const t=(DATA.trophies||[]).find(x=>x.id===id); if(!t) return;
+  const name=prompt(t.type==='premio'?'Nome do prêmio':'Nome do campeonato ou título',t.name);
+  if(name===null) return;
+  if(!name.trim()){ toast('O nome da conquista não pode ficar vazio.','err'); return; }
+  const detalhe=prompt(t.type==='premio'?'Quem ganhou e, se quiser, ano/temporada':'Ano, temporada ou observação (opcional)',t.detail||'');
+  if(detalhe===null) return;
+  t.name=name.trim(); t.detail=detalhe.trim();
+  DATA.generated=new Date().toISOString(); saveExtra(); renderTrofeus(); publica();
+  toast('Conquista atualizada.','ok');
+}
+function adicionarTrofeu(type){
+  const name=prompt(type==='premio'?'Nome do prêmio (ex.: Artilheiro)':'Nome do campeonato ou título');
+  if(name===null) return;
+  if(!name.trim()){ toast('Escreva o nome da conquista.','err'); return; }
+  const detalhe=prompt(type==='premio'?'Quem ganhou e, se quiser, ano/temporada':'Ano, temporada ou observação (opcional)')||'';
+  if(!Array.isArray(DATA.trophies)) DATA.trophies=[];
+  DATA.trophies.push({id:'trofeu-'+Date.now(),type,name:name.trim(),detail:detalhe.trim()});
+  DATA.generated=new Date().toISOString(); saveExtra(); renderTrofeus(); publica();
+  toast(type==='premio'?'Prêmio adicionado.':'Título adicionado.','ok');
+}
+function removerTrofeu(id){
+  const t=(DATA.trophies||[]).find(x=>x.id===id); if(!t) return;
+  if(!confirm('Remover a conquista “'+t.name+'”?')) return;
+  DATA.trophies=DATA.trophies.filter(x=>x.id!==id);
+  DATA.generated=new Date().toISOString(); saveExtra(); renderTrofeus(); publica();
+  toast('Conquista removida.','ok');
+}
+$('#btnAddTitulo').onclick=()=>adicionarTrofeu('titulo');
+$('#btnAddPremio').onclick=()=>adicionarTrofeu('premio');
 
 function renderDados(){
   $('#apiLink').href = API_URL;
@@ -3848,6 +3919,23 @@ function mergeMatches(incoming){
   DATA.matches.forEach((m,i)=>m.order=i+1);
   return {added,upd,travadas};
 }
+async function ressincronizarPartida(id, botao){
+  const atual = DATA.matches.find(m=>m.id===id); if(!atual) return;
+  if(!confirm('Ressincronizar esta partida com a API da EA? As correções manuais desta partida serão substituídas pelos dados da API.')) return;
+  const texto = botao.textContent; botao.disabled=true; botao.textContent='Buscando API…';
+  try{
+    const remoto = parseEA(await buscarApi()).find(m=>m.id===id);
+    if(!remoto) throw new Error('esta partida não está no recorte atual retornado pela API');
+    Object.assign(atual, remoto);
+    delete atual.locked;
+    DATA.generated = new Date().toISOString();
+    saveExtra(); picked=null; curMatch=id; renderAll(); publica();
+    toast('Partida ressincronizada com a API da EA.','ok');
+  }catch(e){
+    toast('Não consegui ressincronizar: '+e.message+'.','err');
+    botao.disabled=false; botao.textContent=texto;
+  }
+}
 /* ============ jogadas gravadas ============ */
 const MAX_JOGADAS = 6;
 let JOGADAS = [];
@@ -3888,6 +3976,7 @@ async function carregaEstado(){
     const j = await r.json();
     if(!j || !j.ok) return false;
     COMPARTILHADO = true;
+    if(j.dados && Array.isArray(j.dados.trophies)) DATA.trophies = j.dados.trophies;
     if(j.dados && Array.isArray(j.dados.matches) && j.dados.matches.length){
       DATA.matches = j.dados.matches;
       if(j.dados.roster){
@@ -3925,7 +4014,7 @@ async function salvaEstado(){
   ENVIANDO = (async ()=>{
     const r = await fetch('/api/dados', {method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({matches: DATA.matches, roster: DATA.roster})});
+      body: JSON.stringify({matches: DATA.matches, roster: DATA.roster, trophies: DATA.trophies||[]})});
     const j = await r.json();
     if(!j || !j.ok) throw new Error(j && j.motivo ? j.motivo : 'falha ao publicar');
     return j;
@@ -3944,12 +4033,20 @@ async function zeraEstado(){
 }
 
 function saveExtra(){
-  try{ localStorage.setItem(LSKEY, JSON.stringify(
-    DATA.matches.filter(m=>!RAW.matches.some(r=>r.id===m.id)) )); }catch(e){}
+  try{ localStorage.setItem(LSKEY, JSON.stringify({
+    matches: DATA.matches.filter(m=>!RAW.matches.some(r=>r.id===m.id)), trophies:DATA.trophies||[]
+  })); }catch(e){}
 }
 function loadExtra(){
   try{ const s=localStorage.getItem(LSKEY); if(!s) return;
-    const ex=JSON.parse(s); if(Array.isArray(ex)&&ex.length) mergeMatches(ex); }catch(e){}
+    const ex=JSON.parse(s);
+    // aceita também o formato antigo, que guardava apenas a lista de partidas.
+    if(Array.isArray(ex)&&ex.length) mergeMatches(ex);
+    else if(ex && typeof ex==='object'){
+      if(Array.isArray(ex.matches)&&ex.matches.length) mergeMatches(ex.matches);
+      if(Array.isArray(ex.trophies)) DATA.trophies=ex.trophies;
+    }
+  }catch(e){}
 }
 
 /* ============ escalação: lousa tática ============ */
@@ -4261,6 +4358,7 @@ function selectTab(name){
   if(name==='partidas') renderMatches();
   if(name==='escala') renderEscala();
   if(name==='evolucao') renderEvolucao();
+  if(name==='trofeus') renderTrofeus();
   if(name==='dados') renderDados();
   try{ localStorage.setItem('bloco7:tab', name); }catch(e){}
 }
@@ -4566,22 +4664,33 @@ function linhaJogador(nome){
   g.type='number'; g.step='1'; g.min='0'; g.value='0'; g.setAttribute('aria-label','Gols');
   const a = document.createElement('input');
   a.type='number'; a.step='1'; a.min='0'; a.value='0'; a.setAttribute('aria-label','Assistências');
+  const sh = document.createElement('input');
+  sh.type='number'; sh.step='1'; sh.min='0'; sh.value='0'; sh.setAttribute('aria-label','Finalizações');
+  const pm = document.createElement('input');
+  pm.type='number'; pm.step='1'; pm.min='0'; pm.value='0'; pm.setAttribute('aria-label','Passes certos');
+  const pa = document.createElement('input');
+  pa.type='number'; pa.step='1'; pa.min='0'; pa.value='0'; pa.setAttribute('aria-label','Passes tentados');
+  const tm = document.createElement('input');
+  tm.type='number'; tm.step='1'; tm.min='0'; tm.value='0'; tm.setAttribute('aria-label','Desarmes concluídos');
+  const ta = document.createElement('input');
+  ta.type='number'; ta.step='1'; ta.min='0'; ta.value='0'; ta.setAttribute('aria-label','Desarmes tentados');
   const rm = document.createElement('button');
   rm.type='button'; rm.className='rm'; rm.setAttribute('aria-label','Remover jogador');
   rm.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
   rm.onclick = ()=>row.remove();
-  row.append(sel, nota, g, a, rm);
+  row.append(sel, nota, g, a, sh, pm, pa, tm, ta, rm);
   return row;
 }
 let editandoId = null;
 function preencheLinha(row, p){
-  const [sel, nota, g, a] = row.children;
+  const [sel, nota, g, a, sh, pm, pa, tm, ta] = row.children;
   if(![...sel.options].some(o=>o.value===p.p)){
     const o = document.createElement('option'); o.textContent = p.p; sel.insertBefore(o, sel.firstChild);
   }
   sel.value = p.p;
   nota.value = p.rating==null ? '' : p.rating;
   g.value = p.g||0; a.value = p.a||0;
+  sh.value=p.sh||0; pm.value=p.pm||0; pa.value=p.pa||0; tm.value=p.tm||0; ta.value=p.ta||0;
 }
 function montarForm(jogo){
   const box = $('#prows'); box.innerHTML='';
@@ -4661,10 +4770,12 @@ $('#btnSaveMatch').onclick = ()=>{
   const gf = parseInt($('#fGf').value,10)||0, ga = parseInt($('#fGa').value,10)||0;
   if(!opp){ msg.textContent='Escreva o nome do adversário.'; msg.style.color='var(--mid)'; return; }
   const players = [...$('#prows').children].map(row=>{
-    const [sel,nota,g,a] = row.children;
+    const [sel,nota,g,a,sh,pm,pa,tm,ta] = row.children;
     const nome = sel.value;
     const r = nota.value.trim()==='' ? null : Math.min(10, Math.max(0, parseFloat(nota.value.replace(',','.'))));
-    return { p:nome, rating:(r==null||isNaN(r))?null:r, g:parseInt(g.value,10)||0, a:parseInt(a.value,10)||0 };
+    return { p:nome, rating:(r==null||isNaN(r))?null:r, g:parseInt(g.value,10)||0, a:parseInt(a.value,10)||0,
+      sh:parseInt(sh.value,10)||0, pm:parseInt(pm.value,10)||0, pa:parseInt(pa.value,10)||0,
+      tm:parseInt(tm.value,10)||0, ta:parseInt(ta.value,10)||0 };
   }).filter(p=>p.p);
   // um jogador só pode aparecer uma vez na escalação
   const vistos = new Set();

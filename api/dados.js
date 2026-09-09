@@ -82,6 +82,7 @@ export default async function handler(req, res) {
       const estado = {
         matches: corpo.matches,
         roster: (corpo.roster && typeof corpo.roster === 'object') ? corpo.roster : null,
+        trophies: Array.isArray(corpo.trophies) ? corpo.trophies : [],
         em: new Date().toISOString(),
       };
       await gravar(estado);
