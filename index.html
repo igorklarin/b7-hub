@@ -398,8 +398,14 @@ footer.foot{border-top:1px solid var(--line); padding:22px 0 40px; color:var(--i
 @media(max-width:850px){.prow,.prowhead{min-width:715px}.prows-wrap{overflow-x:auto;padding-bottom:4px}}
 
 /* ---------- troféus ---------- */
-.trophy-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:14px;margin-top:16px}
+.trophy-grid{display:flex;flex-direction:column;gap:16px;margin-top:16px}
+.trophy-group{border:1px solid var(--line2);border-radius:var(--r);overflow:hidden;background:var(--surf2)}
 .trophy-card{display:flex;gap:12px;align-items:flex-start;background:var(--surf2);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px}
+.trophy-group>.trophy-card{border:0;border-radius:0;padding:18px;background:linear-gradient(120deg,color-mix(in srgb,var(--wine) 28%,var(--surf)),var(--surf) 70%)}
+.trophy-group>.trophy-card h3{font-family:Anton,sans-serif;font-size:24px;letter-spacing:.015em}.trophy-group>.trophy-card .trophy-icon{width:48px;height:48px}
+.trophy-awards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;padding:12px;border-top:1px solid var(--line)}
+.trophy-awards .trophy-card{padding:11px;border-color:var(--line);background:var(--surf)}
+.trophy-awards .trophy-icon{width:32px;height:32px}.trophy-awards .trophy-card h3{font-size:14px}
 .trophy-icon{width:38px;height:38px;display:grid;place-items:center;flex:none;border-radius:10px;background:var(--accent-soft);color:var(--accent)}
 .trophy-card h3{font-size:15px;margin:1px 0 3px}.trophy-card p{margin:0;color:var(--ink2);font-size:13px;line-height:1.4}.trophy-card button{margin-left:auto;flex:none}
 .trophy-form{margin-top:16px;padding:15px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surf2)}
@@ -3136,7 +3142,9 @@ function goalsChart(escopo){
     });
     const nome = m.opp.length>10 ? m.opp.slice(0,9)+'…' : m.opp;
     const lb = svgEl('text',{x:cx, y:H-30,'text-anchor':'middle','font-size':9,fill:cssv('--ink2')});
-    lb.textContent = nome; s.appendChild(lb);
+    lb.textContent = nome;
+    lb.appendChild(svgEl('title',{})).textContent=m.opp;
+    s.appendChild(lb);
     const sc = svgEl('text',{x:cx, y:H-12,'text-anchor':'middle','font-size':11,fill:cssv('--ink3'),
       'font-family':'IBM Plex Mono, monospace'});
     sc.textContent = m.gf+'–'+m.ga; s.appendChild(sc);
@@ -3666,23 +3674,32 @@ function renderTrofeus(){
     grid.innerHTML='<p class="muted" style="margin:4px 0">Nenhuma conquista registrada ainda. Use os botões acima para adicionar a primeira.</p>';
     return;
   }
-  itens.forEach(t=>{
+  const icone = tipo => tipo==='premio'
+    ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m12 2 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 8.6l6.2-.9z"/></svg>'
+    : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.7V17c0 .6-.1 1.1-.5 1.5L8 20h8l-1.5-1.5c-.4-.4-.5-.9-.5-1.5v-2.3"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>';
+  const cardDe = t => {
     const titulo=t.type==='premio'?'Prêmio individual':'Título';
     const tituloVinculado=t.type==='premio' && t.parentId ? (itens.find(x=>x.id===t.parentId)||{}).name : '';
     const dataTitulo=t.type==='titulo' && t.date ? t.date.split('-').reverse().join('/') : '';
-    const icone=t.type==='premio'
-      ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m12 2 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 8.6l6.2-.9z"/></svg>'
-      : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.7V17c0 .6-.1 1.1-.5 1.5L8 20h8l-1.5-1.5c-.4-.4-.5-.9-.5-1.5v-2.3"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>';
     const card=el('div','trophy-card');
-    card.innerHTML='<div class="trophy-icon">'+icone+'</div><div style="min-width:0;flex:1"><div class="lab">'+titulo+'</div><h3>'+esc(t.name)+'</h3>'+(dataTitulo?'<p>🏆 '+dataTitulo+'</p>':'')+(tituloVinculado?'<p>🏆 '+esc(tituloVinculado)+'</p>':'')+(t.detail?'<p>'+esc(t.detail)+'</p>':'')+'</div>';
+    card.innerHTML='<div class="trophy-icon">'+icone(t.type)+'</div><div style="min-width:0;flex:1"><div class="lab">'+titulo+'</div><h3>'+esc(t.name)+'</h3>'+(dataTitulo?'<p>🏆 '+dataTitulo+'</p>':'')+(tituloVinculado?'<p>🏆 '+esc(tituloVinculado)+'</p>':'')+(t.detail?'<p>'+esc(t.detail)+'</p>':'')+'</div>';
     const acoes=el('div'); acoes.style.cssText='display:flex;flex-direction:column;gap:6px';
     const edit=el('button','btn','Editar'); edit.style.minHeight='34px'; edit.style.padding='6px 9px';
     edit.onclick=()=>editarTrofeu(t.id);
     const apagar=el('button','btn','×'); apagar.title='Remover conquista'; apagar.setAttribute('aria-label','Remover '+t.name);
     apagar.style.cssText='min-height:30px;padding:3px 9px;color:var(--bad);border-color:var(--bad)';
     apagar.onclick=()=>removerTrofeu(t.id);
-    acoes.append(edit,apagar); card.appendChild(acoes); grid.appendChild(card);
+    acoes.append(edit,apagar); card.appendChild(acoes); return card;
+  };
+  const titulos=itens.filter(t=>t.type==='titulo');
+  titulos.forEach(t=>{
+    const grupo=el('div','trophy-group'); grupo.appendChild(cardDe(t));
+    const premios=itens.filter(p=>p.type==='premio' && p.parentId===t.id);
+    if(premios.length){ const lista=el('div','trophy-awards'); premios.forEach(p=>lista.appendChild(cardDe(p))); grupo.appendChild(lista); }
+    grid.appendChild(grupo);
   });
+  const soltos=itens.filter(t=>t.type==='premio' && !titulos.some(x=>x.id===t.parentId));
+  if(soltos.length){ const lista=el('div','trophy-awards'); soltos.forEach(p=>lista.appendChild(cardDe(p))); grid.appendChild(lista); }
 }
 function editarTrofeu(id){
   const t=(DATA.trophies||[]).find(x=>x.id===id); if(!t) return;
