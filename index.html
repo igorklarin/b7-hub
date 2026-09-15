@@ -3945,7 +3945,10 @@ async function buscarApi(){
       const txt = await r.text();
       let j; try{ j = JSON.parse(txt); }catch(e){ erros.push(nome+': resposta não é JSON'); continue; }
       if(Array.isArray(j)) return j;
-      if(j && j.bloqueado){ erros.push(nome+': '+(j.motivo||'bloqueado pela EA')); continue; }
+      if(j && j.bloqueado){
+        const detalhe = Array.isArray(j.notas) && j.notas.length ? ' — '+j.notas.join(' · ') : '';
+        erros.push(nome+': '+(j.motivo||'bloqueado pela EA')+detalhe); continue;
+      }
       erros.push(nome+': resposta fora do formato');
     }catch(e){ erros.push(nome+': '+(e.name==='AbortError'?'tempo esgotado':'bloqueado pelo navegador')); }
   }
@@ -4530,8 +4533,11 @@ async function atualizar(){
     selectTab('dados');
     $('#guia').hidden = false;
     marcaPasso(1);
-    const m = 'A EA não aceita a busca automática. Siga os dois passos abaixo — leva uns 15 segundos.';
-    toast(m, 'err'); msgAtualizar(m, 'err');
+    const base = 'Não consegui atualizar automaticamente agora.';
+    const detalhe = Array.isArray(err.detalhe) && err.detalhe.length
+      ? ' Diagnóstico: '+err.detalhe.join(' | ') : '';
+    const m = base+' Siga os dois passos abaixo — leva uns 15 segundos.';
+    toast(m, 'err'); msgAtualizar(base+detalhe, 'err');
     $('#guia').scrollIntoView({behavior:'smooth', block:'center'});
   }finally{ b.disabled=false; ico.classList.remove('spin'); txt.textContent='Atualizar'; }
 }
