@@ -962,12 +962,12 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
         </p>
         <div class="notice">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-          <div><b>A EA bloqueia servidores.</b> A API dela só responde a conexão doméstica, e o navegador não pode
-          chamá-la a partir de outro site. Por isso a atualização acontece pelo seu próprio navegador, em dois
-          passos — o botão te guia.</div>
+          <div><b>Atualização automática.</b> O botão tenta primeiro buscar as partidas diretamente. Se a EA ou
+          uma rota intermediária estiver indisponível naquele momento, o hub oferece o plano manual abaixo.</div>
         </div>
         <p style="margin:12px 0 0;color:var(--good);font-size:13px;max-width:66ch;font-weight:600" id="avisoSync"></p>
         <p style="margin:6px 0 0;color:var(--ink3);font-size:13px;max-width:66ch" id="refreshMsg"></p>
+        <pre id="refreshDetails" hidden style="white-space:pre-wrap;word-break:break-word;margin:10px 0 0;padding:11px;border-radius:8px;background:var(--surf2);border:1px solid var(--line);color:var(--ink2);font:11.5px/1.5 'IBM Plex Mono',monospace"></pre>
 
         <div id="guia" hidden style="margin-top:18px">
           <div class="passos">
@@ -4502,6 +4502,10 @@ function msgAtualizar(txt, tipo){
   const m=$('#refreshMsg'); if(!m) return;
   m.textContent=txt; m.style.color = tipo==='err'?'var(--bad)':tipo==='ok'?'var(--good)':'var(--ink3)';
 }
+function mostraDiagnostico(txt){
+  const d=$('#refreshDetails'); if(!d) return;
+  d.hidden=!txt; d.textContent=txt||'';
+}
 function aplicarIncoming(inc){
   if(!inc.length) throw new Error('nenhuma partida do Bloco Sete nesse conteúdo');
   const r = mergeMatches(inc);
@@ -4522,12 +4526,14 @@ async function atualizar(){
   const b=$('#btnRefresh'), ico=b.querySelector('svg'), txt=$('#btnRefreshTxt');
   b.disabled=true; ico.classList.add('spin'); txt.textContent='Buscando…';
   msgAtualizar('Tentando buscar direto…');
+  mostraDiagnostico('');
   try{
     const r = aplicarIncoming(parseEA(await buscarApi()));
     const resumo = (r.added ? r.added+' partida'+(r.added===1?'':'s')+' nova'+(r.added===1?'':'s')+' no dashboard.'
                             : 'Tudo em dia — nenhuma partida nova.')
       + (r.travadas ? ' '+r.travadas+' corrigida(s) à mão foram preservadas.' : '');
     toast(resumo, r.added?'ok':null); msgAtualizar(resumo, r.added?'ok':null);
+    mostraDiagnostico('');
     $('#guia').hidden = true;
   }catch(err){
     selectTab('dados');
@@ -4538,6 +4544,8 @@ async function atualizar(){
       ? ' Diagnóstico: '+err.detalhe.join(' | ') : '';
     const m = base+' Siga os dois passos abaixo — leva uns 15 segundos.';
     toast(m, 'err'); msgAtualizar(base+detalhe, 'err');
+    mostraDiagnostico(Array.isArray(err.detalhe) && err.detalhe.length
+      ? err.detalhe.join('\n\n') : 'Erro retornado: '+(err.message||String(err)));
     $('#guia').scrollIntoView({behavior:'smooth', block:'center'});
   }finally{ b.disabled=false; ico.classList.remove('spin'); txt.textContent='Atualizar'; }
 }
