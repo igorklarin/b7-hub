@@ -10,7 +10,7 @@ import http2 from 'node:http2';
 const CLUB = '689529';
 const PLATAFORMA = 'common-gen5';
 const CAMINHO = `/api/fc/clubs/matches`
-  + `?matchType=friendlyMatch&platform=${PLATAFORMA}&clubIds=${CLUB}&maxResultCount=50`;
+  + `?matchType=friendlyMatch&platform=${PLATAFORMA}&clubIds=${CLUB}&maxResultCount=20`;
 const HOST = 'proclubs.ea.com';
 const URL_EA = `https://${HOST}${CAMINHO}`;
 
@@ -121,9 +121,7 @@ const ESTRATEGIAS = [
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  // Uma resposta vazia não pode ficar presa no cache: o botão Atualizar deve
-  // sempre consultar a EA de novo quando o usuário pedir.
-  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=600');
   const notas = [];
 
   for (const [nome, tentar] of ESTRATEGIAS) {

@@ -3925,8 +3925,7 @@ function parseEA(json){
 /* --------- busca direta na API (com proxies de CORS como plano B) --------- */
 const ROTAS = [
   // se o dash estiver hospedado com a função /api/matches junto, ela resolve tudo sem CORS
-  // A resposta da EA pode variar; nunca reutiliza uma lista vazia que tenha sido cacheada.
-  ['servidor próprio', () => '/api/matches?at=' + Date.now()],
+  ['servidor próprio', () => '/api/matches'],
   ['EA direto',    u => u],
   ['allorigins',   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u)],
   ['codetabs',     u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u)],
