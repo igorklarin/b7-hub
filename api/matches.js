@@ -121,7 +121,9 @@ const ESTRATEGIAS = [
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=600');
+  // Uma resposta vazia não pode ficar presa no cache: o botão Atualizar deve
+  // sempre consultar a EA de novo quando o usuário pedir.
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
   const notas = [];
 
   for (const [nome, tentar] of ESTRATEGIAS) {
