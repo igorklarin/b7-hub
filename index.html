@@ -385,7 +385,7 @@ footer.foot{border-top:1px solid var(--line); padding:22px 0 40px; color:var(--i
   font-variant-numeric:tabular-nums;
 }
 .fld input:focus, .fld select:focus{border-color:var(--accent); outline:none}
-.prow{display:grid; grid-template-columns:1.45fr 58px 48px 48px 48px 62px 62px 62px 62px 34px; gap:6px; align-items:center; margin-bottom:7px}
+.prow{display:grid; grid-template-columns:1.45fr 58px 48px 48px 48px 62px 62px 62px 62px 52px 34px; gap:6px; align-items:center; margin-bottom:7px}
 .prow input, .prow select{
   background:var(--surf2); border:1px solid var(--line); border-radius:7px; color:var(--ink);
   padding:8px; font:inherit; font-size:13px; min-height:38px; width:100%; font-variant-numeric:tabular-nums;
@@ -393,9 +393,9 @@ footer.foot{border-top:1px solid var(--line); padding:22px 0 40px; color:var(--i
 .prow .rm{border:1px solid var(--line); background:var(--surf); border-radius:7px; cursor:pointer;
   min-height:38px; display:grid; place-items:center; color:var(--ink3)}
 .prow .rm:hover{color:var(--bad); border-color:var(--bad)}
-.prowhead{display:grid; grid-template-columns:1.45fr 58px 48px 48px 48px 62px 62px 62px 62px 34px; gap:6px; margin-bottom:6px;
+.prowhead{display:grid; grid-template-columns:1.45fr 58px 48px 48px 48px 62px 62px 62px 62px 52px 34px; gap:6px; margin-bottom:6px;
   font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink3); font-weight:700}
-@media(max-width:850px){.prow,.prowhead{min-width:715px}.prows-wrap{overflow-x:auto;padding-bottom:4px}}
+@media(max-width:850px){.prow,.prowhead{min-width:775px}.prows-wrap{overflow-x:auto;padding-bottom:4px}}
 
 /* ---------- troféus ---------- */
 .trophy-grid{display:flex;flex-direction:column;gap:16px;margin-top:16px}
@@ -1065,7 +1065,7 @@ Com nenhum modo ligado, você arrasta jogadores e clica neles para escalar.
             <label class="toggle" style="margin-bottom:16px"><input type="checkbox" id="fPens"> Empatou e venceu nos pênaltis</label>
 
             <p style="font-size:12.5px;color:var(--ink2);margin:0 0 10px">Em partidas da API, as estatísticas abaixo vêm preenchidas e podem ser corrigidas sem se perder ao salvar.</p>
-            <div class="prows-wrap"><div class="prowhead"><span>Jogador</span><span>Nota</span><span>Gols</span><span>Assist</span><span>Fin.</span><span>Passes ✓</span><span>Passes ↗</span><span>Desarmes ✓</span><span>Desarmes ↗</span><span></span></div>
+            <div class="prows-wrap"><div class="prowhead"><span>Jogador</span><span>Nota</span><span>Gols</span><span>Assist</span><span>Fin.</span><span>Passes ✓</span><span>Passes ↗</span><span>Desarmes ✓</span><span>Desarmes ↗</span><span>MOTM</span><span></span></div>
             <div id="prows"></div></div>
             <div class="toolbar" style="margin-top:10px">
               <button class="btn" id="btnAddRow" type="button">+ Jogador</button>
@@ -4743,16 +4743,21 @@ function linhaJogador(nome){
   tm.type='number'; tm.step='1'; tm.min='0'; tm.value='0'; tm.setAttribute('aria-label','Desarmes concluídos');
   const ta = document.createElement('input');
   ta.type='number'; ta.step='1'; ta.min='0'; ta.value='0'; ta.setAttribute('aria-label','Desarmes tentados');
+  const mom = document.createElement('input');
+  mom.type='radio'; mom.name='fMOTM'; mom.value='1';
+  mom.setAttribute('aria-label','MOTM — craque da partida');
+  mom.title='MOTM — craque da partida';
+  mom.style.cssText='width:18px;height:18px;justify-self:center;accent-color:var(--accent)';
   const rm = document.createElement('button');
   rm.type='button'; rm.className='rm'; rm.setAttribute('aria-label','Remover jogador');
   rm.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
   rm.onclick = ()=>row.remove();
-  row.append(sel, nota, g, a, sh, pm, pa, tm, ta, rm);
+  row.append(sel, nota, g, a, sh, pm, pa, tm, ta, mom, rm);
   return row;
 }
 let editandoId = null;
 function preencheLinha(row, p){
-  const [sel, nota, g, a, sh, pm, pa, tm, ta] = row.children;
+  const [sel, nota, g, a, sh, pm, pa, tm, ta, mom] = row.children;
   if(![...sel.options].some(o=>o.value===p.p)){
     const o = document.createElement('option'); o.textContent = p.p; sel.insertBefore(o, sel.firstChild);
   }
@@ -4760,6 +4765,7 @@ function preencheLinha(row, p){
   nota.value = p.rating==null ? '' : p.rating;
   g.value = p.g||0; a.value = p.a||0;
   sh.value=p.sh||0; pm.value=p.pm||0; pa.value=p.pa||0; tm.value=p.tm||0; ta.value=p.ta||0;
+  mom.checked=!!p.mom;
 }
 function montarForm(jogo){
   const box = $('#prows'); box.innerHTML='';
@@ -4839,12 +4845,12 @@ $('#btnSaveMatch').onclick = ()=>{
   const gf = parseInt($('#fGf').value,10)||0, ga = parseInt($('#fGa').value,10)||0;
   if(!opp){ msg.textContent='Escreva o nome do adversário.'; msg.style.color='var(--mid)'; return; }
   const players = [...$('#prows').children].map(row=>{
-    const [sel,nota,g,a,sh,pm,pa,tm,ta] = row.children;
+    const [sel,nota,g,a,sh,pm,pa,tm,ta,mom] = row.children;
     const nome = sel.value;
     const r = nota.value.trim()==='' ? null : Math.min(10, Math.max(0, parseFloat(nota.value.replace(',','.'))));
     return { p:nome, rating:(r==null||isNaN(r))?null:r, g:parseInt(g.value,10)||0, a:parseInt(a.value,10)||0,
       sh:parseInt(sh.value,10)||0, pm:parseInt(pm.value,10)||0, pa:parseInt(pa.value,10)||0,
-      tm:parseInt(tm.value,10)||0, ta:parseInt(ta.value,10)||0 };
+      tm:parseInt(tm.value,10)||0, ta:parseInt(ta.value,10)||0, mom:mom.checked?1:0 };
   }).filter(p=>p.p);
   // um jogador só pode aparecer uma vez na escalação
   const vistos = new Set();
