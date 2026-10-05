@@ -2911,7 +2911,7 @@ const RAW = JSON.parse(document.getElementById('app-data').textContent);
 const LSKEY = 'bloco7:extra:v1';
 const SERIES = ['--s1','--s2','--s3','--s4','--s5','--s6'];
 const API_URL = 'https://proclubs.ea.com/api/fc/clubs/matches?matchType=friendlyMatch&platform='
-  + RAW.club.platform + '&clubIds=' + RAW.club.id + '&maxResultCount=20';
+  + RAW.club.platform + '&clubIds=' + RAW.club.id + '&maxResultCount=10';
 
 let DATA = structuredClone(RAW);
 let onlyApi = false;
@@ -3955,9 +3955,10 @@ async function buscarApi(){
       if(!r.ok){ erros.push(nome+': HTTP '+r.status); continue; }
       const txt = await r.text();
       let j; try{ j = JSON.parse(txt); }catch(e){ erros.push(nome+': resposta não é JSON'); continue; }
-      // Algumas rotas respondem 200 com lista vazia ou cache de outro resultado.
-      // Só aceita a resposta se ela realmente trouxer ao menos uma partida do clube.
+      // Uma lista vazia do próprio servidor é válida: o clube novo pode ainda
+      // não ter amistosos registrados pela EA.
       if(Array.isArray(j)){
+        if(!j.length && nome==='servidor próprio') return j;
         const temClube = j.some(m=>m && m.clubs && m.clubs[String(RAW.club.id)]);
         if(temClube) return j;
         erros.push(nome+': lista sem partidas do clube #'+RAW.club.id); continue;
@@ -4051,6 +4052,10 @@ async function carregaEstado(){
         // o elenco publicado manda nos números, posições e apelidos;
         // do servidor vêm só jogadores que ainda não existem aqui
         const junto = {...j.dados.roster};
+        // Jogadores removidos do elenco não podem voltar do estado compartilhado antigo.
+        ['Josimar'].forEach(nm=>{
+          if(junto[nm]) { delete junto[nm]; PRECISA_REPUBLICAR = true; }
+        });
         Object.entries(RAW.roster).forEach(([k,v])=>{ junto[k] = {...(junto[k]||{}), ...v}; });
         DATA.roster = junto;
       }
@@ -4545,7 +4550,14 @@ async function atualizar(){
   msgAtualizar('Tentando buscar direto…');
   mostraDiagnostico('');
   try{
-    const r = aplicarIncoming(parseEA(await buscarApi()));
+    const incoming = parseEA(await buscarApi());
+    if(!incoming.length){
+      const aviso = 'A EA ainda não publicou amistosos para o novo clube no FC 27.';
+      toast(aviso); msgAtualizar(aviso); mostraDiagnostico('A API respondeu corretamente, mas sem partidas nesta modalidade.');
+      $('#guia').hidden = true;
+      return;
+    }
+    const r = aplicarIncoming(incoming);
     const resumo = (r.added ? r.added+' partida'+(r.added===1?'':'s')+' nova'+(r.added===1?'':'s')+' no dashboard.'
                             : 'Tudo em dia — nenhuma partida nova.')
       + (r.travadas ? ' '+r.travadas+' corrigida(s) à mão foram preservadas.' : '');

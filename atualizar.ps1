@@ -19,7 +19,7 @@ $CLUBE = "29464"
 $PLATAFORMA = "common-gen5"
 if (-not $Url) {
   $Url = "https://proclubs.ea.com/api/fc/clubs/matches" +
-         "?matchType=friendlyMatch&platform=$PLATAFORMA&clubIds=$CLUBE&maxResultCount=20"
+         "?matchType=friendlyMatch&platform=$PLATAFORMA&clubIds=$CLUBE&maxResultCount=10"
 }
 
 function Escreve($txt, $cor = "Gray") { Write-Host $txt -ForegroundColor $cor }
