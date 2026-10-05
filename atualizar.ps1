@@ -15,7 +15,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$CLUBE = "689529"
+$CLUBE = "29464"
 $PLATAFORMA = "common-gen5"
 if (-not $Url) {
   $Url = "https://proclubs.ea.com/api/fc/clubs/matches" +

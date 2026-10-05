@@ -7,7 +7,7 @@
 import https from 'node:https';
 import http2 from 'node:http2';
 
-const CLUB = '689529';
+const CLUB = '29464';
 const PLATAFORMA = 'common-gen5';
 const CAMINHO = `/api/fc/clubs/matches`
   + `?matchType=friendlyMatch&platform=${PLATAFORMA}&clubIds=${CLUB}&maxResultCount=20`;
