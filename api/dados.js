@@ -79,6 +79,10 @@ export default async function handler(req, res) {
         await gravar(null);
         return res.status(200).json({ ok: true, zerado: true });
       }
+      const trocas = normalizarHistorico(corpo.matches);
+      if (corpo.roster && typeof corpo.roster === 'object') {
+        ['Caiozin', '16caiozin', '16caiozinn'].forEach(nm => delete corpo.roster[nm]);
+      }
       const estado = {
         matches: corpo.matches,
         roster: (corpo.roster && typeof corpo.roster === 'object') ? corpo.roster : null,
@@ -86,10 +90,26 @@ export default async function handler(req, res) {
         em: new Date().toISOString(),
       };
       await gravar(estado);
-      return res.status(200).json({ ok: true, em: estado.em, partidas: estado.matches.length });
+      return res.status(200).json({ ok: true, em: estado.em, partidas: estado.matches.length, trocas });
     }
     return res.status(405).json({ ok: false, motivo: 'metodo nao suportado' });
   } catch (e) {
     return res.status(200).json({ ok: false, motivo: String(e && e.message ? e.message : e).slice(0, 300) });
   }
 }
+
+const NOMES_CANONICOS = {
+  caiozin: 'Caio',
+  '16caiozin': 'Caio',
+  '16caiozinn': 'Caio',
+};
+
+function normalizarHistorico(matches) {
+  let trocas = 0;
+  (matches || []).forEach(m => (m.players || []).forEach(p => {
+    const certo = NOMES_CANONICOS[String(p.p || '').toLowerCase()];
+    if (certo && certo !== p.p) { p.p = certo; trocas++; }
+  }));
+  return trocas;
+}
+
